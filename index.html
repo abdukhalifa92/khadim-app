@@ -225,6 +225,22 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filt
 .spin{display:inline-block;width:36px;height:36px;border:3px solid rgba(201,168,76,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* ───────── ADDRESS CARD ───────── */
+.addr-card{background:var(--s1);border:1px solid rgba(255,255,255,.06);border-radius:var(--r);padding:16px 18px;display:flex;align-items:flex-start;gap:14px;transition:.2s;}
+.addr-card:hover{border-color:rgba(201,168,76,.25);}
+.addr-card.default{border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.04);}
+.addr-icon{font-size:24px;width:44px;height:44px;background:var(--s2);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.addr-info{flex:1;}
+.addr-label{font-weight:700;font-size:15px;margin-bottom:3px;display:flex;align-items:center;gap:8px;}
+.addr-default-tag{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.3);border-radius:50px;padding:2px 8px;font-size:10px;font-weight:700;}
+.addr-full{font-size:12px;color:var(--muted);line-height:1.5;}
+.addr-city{font-size:11px;color:var(--accent);margin-top:4px;}
+.addr-actions{display:flex;gap:6px;flex-direction:column;}
+.addr-btn{background:var(--s2);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:11px;font-family:"Cairo",sans-serif;color:var(--muted);transition:.2s;white-space:nowrap;}
+.addr-btn:hover{border-color:var(--gold);color:var(--gold);}
+.addr-btn.del:hover{border-color:var(--err);color:var(--err);}
+.addr-list{display:flex;flex-direction:column;gap:10px;}
+
 /* ───────── RESPONSIVE ───────── */
 @media(max-width:600px){
   .hero{padding:32px 16px 24px;}
@@ -329,6 +345,18 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filt
   </div>
 </div>
 
+<!-- ── ADDRESSES ── -->
+<div class="screen" id="sc-addresses">
+  <div class="sec" style="padding-top:24px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="sec-ttl">&#128205; عناويني</div>
+      <button class="btn-p" style="padding:10px 18px;font-size:13px" onclick="openAddressModal()">+ إضافة عنوان</button>
+    </div>
+    <div class="sec-sub">العناوين المحفوظة لديك</div>
+    <div id="addresses-body"></div>
+  </div>
+</div>
+
 <!-- ── ORDERS ── -->
 <div class="screen" id="sc-orders">
   <div class="sec" style="padding-top:24px">
@@ -407,6 +435,44 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filt
       </div>
       <div class="sbox" id="modal-summary"></div>
       <button class="btn-p" style="width:100%;font-size:15px;padding:14px" onclick="confirmBooking()">✅ تأكيد وإضافة للسلة</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADDRESS MODAL -->
+<div class="overlay" id="addr-modal-overlay">
+  <div class="modal">
+    <div class="mhdr">
+      <div class="mttl" id="addr-modal-title">&#128205; إضافة عنوان</div>
+      <button class="mclose" onclick="closeAddrModal()">&#x2715;</button>
+    </div>
+    <div class="mbody">
+      <div class="fgrp">
+        <label class="flbl">اسم العنوان (مثلاً: البيت، العمل)</label>
+        <input class="finp" id="addr-label" placeholder="البيت">
+      </div>
+      <div class="fgrp">
+        <label class="flbl">العنوان بالتفصيل</label>
+        <textarea class="ftxt" id="addr-full" placeholder="المنطقة، اسم الشارع، رقم المبنى، رقم الشقة..."></textarea>
+      </div>
+      <div class="fgrp">
+        <label class="flbl">المدينة</label>
+        <select class="fsel" id="addr-city">
+          <option value="أبوظبي">أبوظبي</option>
+          <option value="دبي" selected>دبي</option>
+          <option value="الشارقة">الشارقة</option>
+          <option value="عجمان">عجمان</option>
+          <option value="رأس الخيمة">رأس الخيمة</option>
+          <option value="الفجيرة">الفجيرة</option>
+          <option value="أم القيوين">أم القيوين</option>
+        </select>
+      </div>
+      <div class="fgrp" style="display:flex;align-items:center;gap:10px">
+        <input type="checkbox" id="addr-default" style="width:18px;height:18px;accent-color:var(--gold);cursor:pointer">
+        <label for="addr-default" style="font-size:14px;cursor:pointer">تعيين كعنوان افتراضي</label>
+      </div>
+      <div id="addr-err" style="color:var(--err);font-size:12px;margin-bottom:12px"></div>
+      <button class="btn-p" style="width:100%;font-size:15px;padding:14px" onclick="saveAddress()">&#10003; حفظ العنوان</button>
     </div>
   </div>
 </div>
@@ -980,7 +1046,7 @@ async function renderProfile() {
       '<div class="mitem" onclick="go(&quot;orders&quot;)"><div class="mico">&#128203;</div><div class="mtxt"><div class="mttl">طلباتي</div><div class="msub">جميع الحجوزات</div></div><span class="marrow">&#x203A;</span></div>' +
       '<div class="mitem" onclick="go(&quot;favorites&quot;)"><div class="mico">&#10084;&#65039;</div><div class="mtxt"><div class="mttl">المفضلة</div><div class="msub">العاملون المحفوظون</div></div><span class="marrow">&#x203A;</span></div>' +
       '<div class="mitem"><div class="mico">&#128179;</div><div class="mtxt"><div class="mttl">طرق الدفع</div><div class="msub">إدارة البطاقات</div></div><span class="marrow">&#x203A;</span></div>' +
-      '<div class="mitem"><div class="mico">&#128205;</div><div class="mtxt"><div class="mttl">عناويني</div><div class="msub">إدارة العناوين المحفوظة</div></div><span class="marrow">&#x203A;</span></div>' +
+      '<div class="mitem" onclick="go(&quot;addresses&quot;)"><div class="mico">&#128205;</div><div class="mtxt"><div class="mttl">عناويني</div><div class="msub">إدارة العناوين المحفوظة</div></div><span class="marrow">&#x203A;</span></div>' +
       '<div class="mitem" onclick="signOut()"><div class="mico">&#128682;</div><div class="mtxt"><div class="mttl" style="color:var(--err)">تسجيل الخروج</div><div class="msub">الخروج من الحساب</div></div><span class="marrow">&#x203A;</span></div>' +
     '</div>';
 }
@@ -988,6 +1054,109 @@ async function signOut() {
   if (SB) await SB.auth.signOut();
   USER = null; PROFILE = null; FAVS.clear();
   updateAuthBtn(); go('home'); toast('تم تسجيل الخروج');
+}
+
+// ═══════════════════════════════════════════════════
+//  ADDRESSES
+// ═══════════════════════════════════════════════════
+var editingAddrId = null;
+
+async function loadAddressesScreen() {
+  var el = document.getElementById('addresses-body');
+  if (!USER) {
+    el.innerHTML = '<div class="empty"><div class="eico"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3"/></svg></div><p>سجّل دخولك لعرض عناويني</p><button class="btn-p" style="margin-top:16px" onclick="go(&quot;auth&quot;)">تسجيل الدخول</button></div>';
+    return;
+  }
+  el.innerHTML = '<div class="loader"><div class="spin"></div></div>';
+  var res = await SB.from('addresses').select('*').eq('user_id', USER.id).order('is_default', {ascending: false});
+  var data = res.data; var error = res.error;
+  if (error) { el.innerHTML = '<p style="color:var(--err);padding:20px">خطأ في تحميل العناوين</p>'; return; }
+  if (!data || !data.length) {
+    el.innerHTML = '<div class="empty"><div class="eico"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div><p>لا توجد عناوين محفوظة بعد</p><button class="btn-p" style="margin-top:16px" onclick="openAddressModal()">+ إضافة عنوان جديد</button></div>';
+    return;
+  }
+  var html = '<div class="addr-list">';
+  data.forEach(function(a) {
+    html += '<div class="addr-card' + (a.is_default ? ' default' : '') + '">' +
+      '<div class="addr-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="' + (a.is_default ? 'var(--gold)' : 'var(--muted)') + '" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>' +
+      '<div class="addr-info">' +
+        '<div class="addr-label">' + a.label + (a.is_default ? '<span class="addr-default-tag">افتراضي</span>' : '') + '</div>' +
+        '<div class="addr-full">' + a.full_address + '</div>' +
+        '<div class="addr-city">&#128205; ' + (a.city || '') + '</div>' +
+      '</div>' +
+      '<div class="addr-actions">' +
+        '<button class="addr-btn" onclick="editAddress(&quot;' + a.id + '&quot;)">&#9998; تعديل</button>' +
+        (!a.is_default ? '<button class="addr-btn" onclick="setDefaultAddr(&quot;' + a.id + '&quot;)">&#9733; افتراضي</button>' : '') +
+        '<button class="addr-btn del" onclick="deleteAddr(&quot;' + a.id + '&quot;)">&#128465; حذف</button>' +
+      '</div>' +
+    '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function openAddressModal(id) {
+  editingAddrId = id || null;
+  document.getElementById('addr-modal-title').innerHTML = id ? '&#9998; تعديل العنوان' : '&#128205; إضافة عنوان';
+  document.getElementById('addr-label').value = '';
+  document.getElementById('addr-full').value = '';
+  document.getElementById('addr-city').value = 'دبي';
+  document.getElementById('addr-default').checked = false;
+  document.getElementById('addr-err').textContent = '';
+  if (id) {
+    SB.from('addresses').select('*').eq('id', id).single().then(function(res) {
+      if (res.data) {
+        document.getElementById('addr-label').value = res.data.label || '';
+        document.getElementById('addr-full').value = res.data.full_address || '';
+        document.getElementById('addr-city').value = res.data.city || 'دبي';
+        document.getElementById('addr-default').checked = res.data.is_default || false;
+      }
+    });
+  }
+  document.getElementById('addr-modal-overlay').classList.add('open');
+}
+
+function closeAddrModal() {
+  document.getElementById('addr-modal-overlay').classList.remove('open');
+  editingAddrId = null;
+}
+
+async function saveAddress() {
+  var label = document.getElementById('addr-label').value.trim();
+  var full  = document.getElementById('addr-full').value.trim();
+  var city  = document.getElementById('addr-city').value;
+  var isDef = document.getElementById('addr-default').checked;
+  if (!label || !full) { document.getElementById('addr-err').textContent = 'الرجاء تعبئة جميع الحقول'; return; }
+  document.getElementById('addr-err').textContent = '';
+  // if setting as default, unset others first
+  if (isDef) { await SB.from('addresses').update({is_default: false}).eq('user_id', USER.id); }
+  var payload = { user_id: USER.id, label: label, full_address: full, city: city, is_default: isDef };
+  var res;
+  if (editingAddrId) {
+    res = await SB.from('addresses').update(payload).eq('id', editingAddrId);
+  } else {
+    res = await SB.from('addresses').insert(payload);
+  }
+  if (res.error) { document.getElementById('addr-err').textContent = res.error.message; return; }
+  closeAddrModal();
+  toast(editingAddrId ? 'تم تحديث العنوان ✅' : 'تم إضافة العنوان ✅');
+  loadAddressesScreen();
+}
+
+async function editAddress(id) { openAddressModal(id); }
+
+async function setDefaultAddr(id) {
+  await SB.from('addresses').update({is_default: false}).eq('user_id', USER.id);
+  await SB.from('addresses').update({is_default: true}).eq('id', id);
+  toast('تم تعيين العنوان الافتراضي ✅');
+  loadAddressesScreen();
+}
+
+async function deleteAddr(id) {
+  if (!confirm('هل تريد حذف هذا العنوان؟')) return;
+  await SB.from('addresses').delete().eq('id', id);
+  toast('تم حذف العنوان');
+  loadAddressesScreen();
 }
 
 // ═══════════════════════════════════════════════════
@@ -1024,6 +1193,7 @@ function go(name) {
   window.scrollTo(0,0);
   if (name==='orders') loadOrders();
   if (name==='favorites') loadFavoritesScreen();
+  if (name==='addresses') loadAddressesScreen();
   if (name==='profile') renderProfile();
   if (name==='cart') renderCart();
   if (name==='auth') renderAuthForm();
