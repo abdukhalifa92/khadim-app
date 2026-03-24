@@ -249,39 +249,25 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filt
 html { touch-action: pan-x pan-y; }
 </style>
 <script>
-// ── Block ALL zoom methods ──
 (function() {
-  // 1. Pinch zoom
+  // 1. منع pinch zoom فقط (أكتر من إصبع)
   document.addEventListener('touchmove', function(e) {
-    if (e.scale !== 1 || e.touches.length > 1) { e.preventDefault(); return false; }
+    if (e.touches.length > 1) e.preventDefault();
   }, { passive: false });
 
-  // 2. Double-tap zoom
-  var lastTouch = 0;
-  document.addEventListener('touchstart', function(e) {
-    var now = Date.now();
-    if (now - lastTouch < 350) { e.preventDefault(); return false; }
-    lastTouch = now;
-  }, { passive: false });
+  // 2. Safari gesture events
+  document.addEventListener('gesturestart',  function(e) { e.preventDefault(); }, { passive: false });
+  document.addEventListener('gesturechange', function(e) { e.preventDefault(); }, { passive: false });
+  document.addEventListener('gestureend',    function(e) { e.preventDefault(); }, { passive: false });
 
-  document.addEventListener('touchend', function(e) {
-    var now = Date.now();
-    if (now - lastTouch < 350) { e.preventDefault(); return false; }
-  }, { passive: false });
-
-  // 3. Ctrl + scroll / keyboard zoom (desktop)
+  // 3. Desktop zoom
   document.addEventListener('wheel', function(e) {
-    if (e.ctrlKey) { e.preventDefault(); return false; }
+    if (e.ctrlKey) e.preventDefault();
   }, { passive: false });
 
   document.addEventListener('keydown', function(e) {
-    if (e.ctrlKey && ['+','-','=','0'].includes(e.key)) { e.preventDefault(); return false; }
+    if (e.ctrlKey && ['+','-','=','0'].includes(e.key)) e.preventDefault();
   });
-
-  // 4. Gesturestart (Safari specific)
-  document.addEventListener('gesturestart', function(e) { e.preventDefault(); return false; }, { passive: false });
-  document.addEventListener('gesturechange', function(e) { e.preventDefault(); return false; }, { passive: false });
-  document.addEventListener('gestureend', function(e) { e.preventDefault(); return false; }, { passive: false });
 })();
 </script>
 </head>
