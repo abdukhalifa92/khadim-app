@@ -938,53 +938,52 @@ async function doAuth() {
 //  PROFILE
 // ═══════════════════════════════════════════════════
 async function loadFavoritesScreen() {
-  const el = document.getElementById('favorites-body');
+  var el = document.getElementById('favorites-body');
   if (!USER) {
-    el.innerHTML = `<div class="empty"><div class="eico">🔑</div><p>سجّل دخولك لعرض المفضلة</p><button class="btn-p" style="margin-top:16px" onclick="go('auth')">تسجيل الدخول</button></div>`;
+    el.innerHTML = '<div class="empty"><div class="eico">&#128273;</div><p>سجّل دخولك لعرض المفضلة</p><button class="btn-p" style="margin-top:16px" onclick="go(&quot;auth&quot;)">تسجيل الدخول</button></div>';
     return;
   }
   el.innerHTML = '<div class="loader"><div class="spin"></div></div>';
-  const { data, error } = await SB
-    .from('favorites')
-    .select('worker_id, workers(*)')
-    .eq('user_id', USER.id)
-    .order('created_at', { ascending: false });
-  if (error || !data?.length) {
-    el.innerHTML = `<div class="empty"><div class="eico">🤍</div><p>لا توجد عمال في المفضلة بعد<br><small>اضغط على القلب بجانب أي عامل لحفظه</small></p><button class="btn-p" style="margin-top:16px" onclick="go('services')">تصفح العمال</button></div>`;
+  var result = await SB.from('favorites').select('worker_id, workers(*)').eq('user_id', USER.id).order('created_at', { ascending: false });
+  var data = result.data; var error = result.error;
+  if (error || !data || !data.length) {
+    el.innerHTML = '<div class="empty"><div class="eico">&#129293;</div><p>لا توجد عمال في المفضلة بعد</p><button class="btn-p" style="margin-top:16px" onclick="go(&quot;services&quot;)">تصفح العمال</button></div>';
     return;
   }
-  const favWorkers = data.map(d => d.workers).filter(Boolean);
-  el.innerHTML = '<div class="grid">' + favWorkers.map(w => workerCard(w)).join('') + '</div>';
+  var favWorkers = data.map(function(d) { return d.workers; }).filter(Boolean);
+  el.innerHTML = '<div class="grid">' + favWorkers.map(function(w) { return workerCard(w); }).join('') + '</div>';
 }
-
 async function renderProfile() {
-  const el = document.getElementById('profile-body');
+  var el = document.getElementById('profile-body');
   if (!USER) {
-    el.innerHTML = `<div class="empty"><div class="eico">🔑</div><p>سجّل دخولك لعرض ملفك</p><button class="btn-p" style="margin-top:16px" onclick="go('auth')">تسجيل الدخول</button></div>`;
+    el.innerHTML = '<div class="empty"><div class="eico">&#128273;</div><p>سجّل دخولك لعرض ملفك</p><button class="btn-p" style="margin-top:16px" onclick="go(&quot;auth&quot;)">تسجيل الدخول</button></div>';
     return;
   }
-  // count stats
-  const { count: bCount } = await SB.from('bookings').select('id',{count:'exact',head:true}).eq('user_id',USER.id);
-  const { count: favCount } = await SB.from('favorites').select('id',{count:'exact',head:true}).eq('user_id',USER.id);
-  el.innerHTML = `
-    <div class="pcard">
-      <div class="pav">${PROFILE?.avatar_emoji||'👤'}</div>
-      <div class="pnm">${PROFILE?.full_name||USER.email}</div>
-      <div class="pem">${USER.email} · ${PROFILE?.city||'الإمارات'}</div>
-      <div class="pstats">
-        <div><div class="pst-v">${bCount||0}</div><div class="pst-l">حجز</div></div>
-        <div><div class="pst-v">${favCount||0}</div><div class="pst-l">مفضلة</div></div>
-      </div>
-    </div>
-    <div class="mlist">
-      <div class="mitem" onclick="go('orders')"><div class="mico">📋</div><div class="mtxt"><div class="mttl">طلباتي</div><div class="msub">جميع الحجوزات</div></div><span class="marrow">‹</span></div>
-      <div class="mitem" onclick="go('favorites')"><div class="mico">❤️</div><div class="mtxt"><div class="mttl">المفضلة</div><div class="msub">العاملون المحفوظون</div></div><span class="marrow">‹</span></div>
-      <div class="mitem"><div class="mico">💳</div><div class="mtxt"><div class="mttl">طرق الدفع</div><div class="msub">إدارة البطاقات</div></div><span class="marrow">‹</span></div>
-      <div class="mitem"><div class="mico">📍</div><div class="mtxt"><div class="mttl">عناويني</div><div class="msub">إدارة العناوين المحفوظة</div></div><span class="marrow">‹</span></div>
-      <div class="mitem" onclick="signOut()"><div class="mico">🚪</div><div class="mtxt"><div class="mttl" style="color:var(--err)">تسجيل الخروج</div><div class="msub">الخروج من الحساب</div></div><span class="marrow">‹</span></div>
-    </div>`;
+  var r1 = await SB.from('bookings').select('id', {count:'exact', head:true}).eq('user_id', USER.id);
+  var r2 = await SB.from('favorites').select('id', {count:'exact', head:true}).eq('user_id', USER.id);
+  var bCount = r1.count || 0;
+  var favCount = r2.count || 0;
+  var fullName = (PROFILE && PROFILE.full_name) ? PROFILE.full_name : USER.email;
+  var city = (PROFILE && PROFILE.city) ? PROFILE.city : 'الإمارات';
+  var avatar = (PROFILE && PROFILE.avatar_emoji) ? PROFILE.avatar_emoji : '&#128100;';
+  el.innerHTML =
+    '<div class="pcard">' +
+      '<div class="pav">' + avatar + '</div>' +
+      '<div class="pnm">' + fullName + '</div>' +
+      '<div class="pem">' + USER.email + ' &middot; ' + city + '</div>' +
+      '<div class="pstats">' +
+        '<div><div class="pst-v">' + bCount + '</div><div class="pst-l">حجز</div></div>' +
+        '<div><div class="pst-v">' + favCount + '</div><div class="pst-l">مفضلة</div></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="mlist">' +
+      '<div class="mitem" onclick="go(&quot;orders&quot;)"><div class="mico">&#128203;</div><div class="mtxt"><div class="mttl">طلباتي</div><div class="msub">جميع الحجوزات</div></div><span class="marrow">&#x203A;</span></div>' +
+      '<div class="mitem" onclick="go(&quot;favorites&quot;)"><div class="mico">&#10084;&#65039;</div><div class="mtxt"><div class="mttl">المفضلة</div><div class="msub">العاملون المحفوظون</div></div><span class="marrow">&#x203A;</span></div>' +
+      '<div class="mitem"><div class="mico">&#128179;</div><div class="mtxt"><div class="mttl">طرق الدفع</div><div class="msub">إدارة البطاقات</div></div><span class="marrow">&#x203A;</span></div>' +
+      '<div class="mitem"><div class="mico">&#128205;</div><div class="mtxt"><div class="mttl">عناويني</div><div class="msub">إدارة العناوين المحفوظة</div></div><span class="marrow">&#x203A;</span></div>' +
+      '<div class="mitem" onclick="signOut()"><div class="mico">&#128682;</div><div class="mtxt"><div class="mttl" style="color:var(--err)">تسجيل الخروج</div><div class="msub">الخروج من الحساب</div></div><span class="marrow">&#x203A;</span></div>' +
+    '</div>';
 }
-
 async function signOut() {
   if (SB) await SB.auth.signOut();
   USER = null; PROFILE = null; FAVS.clear();
