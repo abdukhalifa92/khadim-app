@@ -1341,33 +1341,34 @@ async function signOut() {
 var CITIES_DATA = [];
 var NATIONALITIES = [];
 
-// Emoji icon map using twemoji CDN for cross-platform support
-var CAT_EMOJI = {
-  maid:     '1F3E0', // 🏠
-  cleaning: '1F9F9', // 🧹
-  cooking:  '1F373', // 🍳
-  baby:     '1F476', // 👶
-  laundry:  '1F455', // 👕
-  elderly:  '1F474', // 👴
-  ironing:  '1F9BA', // 🧺
-  garden:   '1F33F', // 🌿
-  carwash:  '1F697', // 🚗
-  pest:     '1FAB2', // 🪲
-  ac:       '2744',  // ❄️
-  deep:     '2728',  // ✨
-  default:  '2B50'   // ⭐
+// Original emoji icons - rendered via Twemoji for cross-platform consistency
+var CAT_EMOJI_MAP = {
+  maid:     { em: '🏠', tw: '1f3e0' },
+  cleaning: { em: '🧹', tw: '1f9f9' },
+  cooking:  { em: '🍳', tw: '1f373' },
+  baby:     { em: '👶', tw: '1f476' },
+  laundry:  { em: '👕', tw: '1f455' },
+  elderly:  { em: '👴', tw: '1f474' },
+  ironing:  { em: '🧺', tw: '1f9ba' },
+  garden:   { em: '🌿', tw: '1f33f' },
+  carwash:  { em: '🚗', tw: '1f697' },
+  pest:     { em: '🪲', tw: '1fab2' },
+  ac:       { em: '❄️', tw: '2744'  },
+  deep:     { em: '✨', tw: '2728'  },
+  default:  { em: '⭐', tw: '2b50'  }
 };
 
 function getCatIcon(cat) {
   var key = cat.icon_key || 'default';
-  var code = CAT_EMOJI[key] || CAT_EMOJI['default'];
-  return '<img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14/assets/svg/' + code.toLowerCase() + '.svg" width="40" height="40" alt="" style="display:block">';
+  var entry = CAT_EMOJI_MAP[key] || CAT_EMOJI_MAP.default;
+  var url = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/' + entry.tw + '.svg';
+  return '<img src="' + url + '" width="38" height="38" loading="lazy" style="display:block" class="tw-emoji">';
 }
-
 function getSmallIcon(cat) {
   var key = cat.icon_key || 'default';
-  var code = CAT_EMOJI[key] || CAT_EMOJI['default'];
-  return '<img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14/assets/svg/' + code.toLowerCase() + '.svg" width="16" height="16" alt="" style="vertical-align:middle;margin-left:3px">';
+  var entry = CAT_EMOJI_MAP[key] || CAT_EMOJI_MAP.default;
+  var url = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/' + entry.tw + '.svg';
+  return '<img src="' + url + '" width="15" height="15" loading="lazy" style="vertical-align:middle;margin-left:3px" class="tw-emoji">';
 }  // [{id, name}, ...]
 var AREAS_DATA  = [];  // [{id, city_id, name}, ...]
 
