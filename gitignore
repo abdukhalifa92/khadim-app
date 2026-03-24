@@ -1,0 +1,6 @@
+# Supabase credentials - لا ترفع هذا الملف على GitHub أبداً
+config.json
+
+# OS files
+.DS_Store
+Thumbs.db
