@@ -1021,6 +1021,29 @@ async function confirmBooking() {
   const notes = document.getElementById('notes-inp').value.trim();
   if (!date || !addr) { toast('اختر العنوان أو أدخله أولاً ⚠️'); return; }
 
+  // ── لو عنوان جديد → احفظه تلقائياً في جدول العناوين ──
+  var newForm = document.getElementById('baddr-new-form');
+  var isNewAddr = newForm && newForm.classList.contains('open');
+  if (isNewAddr && USER) {
+    var fullInp  = (document.getElementById('addr-inp') || {}).value || '';
+    var cityId   = (document.getElementById('book-city') || {}).value || '';
+    var areaEl   = document.getElementById('book-area');
+    var areaName = areaEl && areaEl.selectedIndex > 0 ? areaEl.options[areaEl.selectedIndex].dataset.name : '';
+    var cityName = getCityName(cityId);
+    if (fullInp) {
+      var { count } = await SB.from('addresses').select('id', {count:'exact', head:true}).eq('user_id', USER.id);
+      var isFirst = (count === 0);
+      await SB.from('addresses').insert({
+        user_id:      USER.id,
+        label:        areaName || cityName || 'عنوان جديد',
+        full_address: fullInp,
+        city:         cityName,
+        area:         areaName,
+        is_default:   isFirst
+      });
+    }
+  }
+
   const price = currentWorker['price_'+selectedPt];
   const qty   = selectedPt==='fixed' ? 1 : parseInt(document.getElementById('qty-inp').value||1);
   const sub   = price * qty;
