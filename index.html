@@ -108,6 +108,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filt
 .stars{color:#FFD700;font-size:12px;}
 .prices{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
 .ppill{background:var(--s2);border:1px solid rgba(31,166,122,.13);border-radius:50px;padding:3px 10px;font-size:10px;}
+.ppill.inherited{border-style:dashed;opacity:.85;}
 .ppill strong{color:var(--gold);}
 .wacts{display:flex;gap:8px;}
 .btn-book{flex:1;background:linear-gradient(135deg,var(--gold-light),var(--gold));color:#fff;font-family:'Cairo',sans-serif;font-weight:700;font-size:12px;padding:9px;border:none;border-radius:9px;cursor:pointer;transition:.2s;}
@@ -694,19 +695,28 @@ async function loadCategories() {
 
 async function loadWorkers() {
   if (!SB) return;
-  // fetch workers with their categories via junction table
   const { data, error } = await SB
     .from('workers')
-    .select('*, worker_categories(category_id, categories(name_ar, icon))')
+    .select('*, worker_categories(category_id, categories(name_ar, icon, price_fixed, price_hourly, price_daily, price_weekly, price_monthly))')
     .eq('is_active', true)
     .order('rating', { ascending: false });
   if (!error) {
-    // attach categories array to each worker
     WORKERS = data.map(function(w) {
       var cats = (w.worker_categories || []).map(function(wc) { return wc.categories; }).filter(Boolean);
-      return Object.assign({}, w, { cats: cats });
+      // inherit category prices where worker has no price
+      var merged = Object.assign({}, w, { cats: cats });
+      var catPricing = cats[0] || {};
+      ['fixed','hourly','daily','weekly','monthly'].forEach(function(k) {
+        var wKey = 'price_' + k;
+        if (merged[wKey] == null && catPricing[wKey] != null) {
+          merged[wKey] = catPricing[wKey];
+          merged['_inherited_' + k] = true; // flag inherited prices
+        }
+      });
+      return merged;
     });
-    document.getElementById('stat-workers').textContent = WORKERS.filter(function(w){ return w.status==='available'; }).length + '+';
+    document.getElementById('stat-workers').textContent =
+      WORKERS.filter(function(w){ return w.status==='available'; }).length + '+';
   } else {
     console.error('loadWorkers error:', error);
   }
@@ -797,7 +807,13 @@ function workerCard(w) {
   const st = STATUS_MAP[w.status] || {cls:'wb-ok',txt:w.status};
   const pts = ['fixed','hourly','daily','weekly','monthly']
     .filter(k => w['price_'+k] != null)
-    .map(k => `<span class="ppill">${PT_ICON[k]} <strong>${w['price_'+k]} د.إ</strong>/${PT_LABEL[k]}</span>`).join('');
+    .map(k => {
+      var inherited = w['_inherited_'+k];
+      return '<span class="ppill' + (inherited ? ' inherited' : '') + '">' +
+        PT_ICON[k] + ' <strong>' + w['price_'+k] + ' د.إ</strong>/' + PT_LABEL[k] +
+        (inherited ? ' <span style="font-size:9px;opacity:.7">(افتراضي)</span>' : '') +
+        '</span>';
+    }).join('');
   const isFav = FAVS.has(w.id);
   return `<div class="wcard">
     <div class="wimg">${w.icon||'👤'}<span class="wbadge ${st.cls}">${st.txt}</span></div>
