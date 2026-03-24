@@ -560,7 +560,11 @@ const ORDER_STATUS = {
 function createSB(url, key) {
   const client = supabase.createClient(url, key, {
     global: {
-      headers: { 'apikey': key }
+      headers: {
+        'apikey': key,
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
     },
     auth: {
       persistSession: true,
@@ -1440,6 +1444,7 @@ function go(name) {
   document.getElementById('bn-'+name)?.classList.add('on');
   window.scrollTo(0,0);
   if (name==='orders') loadOrders();
+  if (name==='services' || name==='home') { loadWorkers().then(function(){ renderHome(); renderServices(); }); }
   if (name==='favorites') loadFavoritesScreen();
   if (name==='addresses') loadAddressesScreen();
   if (name==='profile') renderProfile();
