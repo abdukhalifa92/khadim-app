@@ -423,6 +423,20 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filt
 <div class="toast" id="toast"></div>
 
 <script>
+// expose functions to global scope for inline onclick handlers
+window.go = function(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  document.getElementById('sc-'+name)?.classList.add('on');
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('bn-'+name)?.classList.add('on');
+  window.scrollTo(0,0);
+  if (name==='orders') loadOrders();
+  if (name==='favorites') loadFavoritesScreen();
+  if (name==='profile') renderProfile();
+  if (name==='cart') renderCart();
+  if (name==='auth') renderAuthForm();
+};
+
 // ═══════════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════════
@@ -990,21 +1004,8 @@ async function signOut() {
 }
 
 // ═══════════════════════════════════════════════════
-//  NAVIGATION
+//  NAVIGATION (defined at top as window.go for onclick access)
 // ═══════════════════════════════════════════════════
-function go(name) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
-  document.getElementById('sc-'+name)?.classList.add('on');
-  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('on'));
-  document.getElementById('bn-'+name)?.classList.add('on');
-  window.scrollTo(0,0);
-  // on-demand renders
-  if (name==='orders') loadOrders();
-  if (name==='favorites') loadFavoritesScreen();
-  if (name==='profile') renderProfile();
-  if (name==='cart') renderCart();
-  if (name==='auth') renderAuthForm();
-}
 
 // ═══════════════════════════════════════════════════
 //  SUCCESS / TOAST
@@ -1023,6 +1024,27 @@ function toast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
 }
+
+
+// expose all inline-onclick functions
+window.initSupabase     = () => initSupabase();
+window.closeModal       = () => closeModal();
+window.hideSuccess      = () => hideSuccess();
+window.openBooking      = (id) => openBooking(id);
+window.toggleFav        = (id, btn) => toggleFav(id, btn);
+window.selectPt         = (pt) => selectPt(pt);
+window.calcSummary      = () => calcSummary();
+window.confirmBooking   = () => confirmBooking();
+window.removeCart       = (id) => removeCart(id);
+window.checkout         = () => checkout();
+window.setCat           = (el, cat) => setCat(el, cat);
+window.setPt            = (el, pt) => setPt(el, pt);
+window.applyFilters     = () => applyFilters();
+window.filterCat        = (name) => filterCat(name);
+window.doAuth           = () => doAuth();
+window.authTab          = (mode) => authTab(mode);
+window.signOut          = () => signOut();
+window.handleAuthBtn    = () => handleAuthBtn();
 
 // ═══════════════════════════════════════════════════
 //  BOOT
