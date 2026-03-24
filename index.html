@@ -559,40 +559,42 @@ async function initSupabase() {
 }
 
 async function tryAutoConnect() {
-  // 1. Try config.json first
+  // 1. Try localStorage first (fastest)
+  const url = localStorage.getItem('sb_url');
+  const key = localStorage.getItem('sb_key');
+  if (url && key) {
+    SB = createSB(url, key);
+    try {
+      const { error } = await SB.from('categories').select('id').limit(1);
+      if (!error) {
+        document.getElementById('setup-banner').classList.add('hidden');
+        document.getElementById('main-nav').style.marginTop = '0';
+        return true;
+      }
+    } catch(e) { SB = null; }
+  }
+
+  // 2. Try config.json (for local dev only)
   try {
-    const res = await fetch('./config.json');
+    const res = await fetch('./config.json', { cache: 'no-store' });
     if (res.ok) {
       const cfg = await res.json();
-      if (cfg.supabase_url && cfg.supabase_key) {
+      if (cfg.supabase_url && cfg.supabase_key &&
+          !cfg.supabase_url.includes('YOUR_PROJECT')) {
         SB = createSB(cfg.supabase_url, cfg.supabase_key);
         const { error } = await SB.from('categories').select('id').limit(1);
         if (!error) {
-          document.getElementById('setup-banner').classList.add('hidden');
-          document.getElementById('main-nav').style.marginTop = '0';
-          // also save to localStorage as backup
           localStorage.setItem('sb_url', cfg.supabase_url);
           localStorage.setItem('sb_key', cfg.supabase_key);
+          document.getElementById('setup-banner').classList.add('hidden');
+          document.getElementById('main-nav').style.marginTop = '0';
           return true;
         }
       }
     }
-  } catch(e) { /* config.json not found, try localStorage */ }
+  } catch(e) { /* config.json not available - that is fine */ }
 
-  // 2. Fallback: localStorage
-  const url = localStorage.getItem('sb_url');
-  const key = localStorage.getItem('sb_key');
-  if (!url || !key) return false;
-  document.getElementById('sb-url').value = url;
-  document.getElementById('sb-key').value = key;
-  SB = createSB(url, key);
-  try {
-    const { error } = await SB.from('categories').select('id').limit(1);
-    if (error) throw error;
-    document.getElementById('setup-banner').classList.add('hidden');
-    document.getElementById('main-nav').style.marginTop = '0';
-    return true;
-  } catch { SB = null; return false; }
+  return false;
 }
 
 async function bootApp() {
