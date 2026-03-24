@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>خدم — لوحة التحكم</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --g1:#1FA67A; --g2:#0D7A56; --g3:#4ECFA8;
+  --bg:#040F0C;  --s1:#0B1F1A; --s2:#112920; --s3:#1A3D2E;
+  --text:#E8F5F0; --muted:#7AADA0; --border:rgba(31,166,122,.15);
+  --err:#FF6B6B; --warn:#FFB347; --ok:#34D399;
+  --r:12px; --sh:0 4px 24px rgba(0,0,0,.4);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:var(--g2);border-radius:3px;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:240px;background:var(--s1);border-left:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;right:0;bottom:0;z-index:50;transition:.3s;}
+.sidebar-logo{padding:24px 20px;border-bottom:1px solid var(--border);}
+.sidebar-logo .name{font-size:22px;font-weight:900;background:linear-gradient(135deg,var(--g3),var(--g1));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.sidebar-logo .sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.nav-menu{flex:1;padding:16px 12px;overflow-y:auto;}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;cursor:pointer;transition:.2s;margin-bottom:4px;font-size:14px;font-weight:600;color:var(--muted);}
+.nav-item:hover{background:var(--s2);color:var(--text);}
+.nav-item.active{background:linear-gradient(135deg,rgba(31,166,122,.25),rgba(31,166,122,.1));color:var(--g3);border:1px solid rgba(31,166,122,.2);}
+.nav-item .ico{font-size:18px;width:28px;text-align:center;}
+.nav-section{font-size:10px;color:var(--muted);padding:12px 14px 6px;text-transform:uppercase;letter-spacing:.8px;}
+.sidebar-footer{padding:16px;border-top:1px solid var(--border);}
+.admin-badge{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--s2);border-radius:10px;}
+.admin-av{width:34px;height:34px;background:linear-gradient(135deg,var(--g1),var(--g2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;}
+.admin-name{font-size:13px;font-weight:700;}
+.admin-role{font-size:10px;color:var(--muted);}
+
+/* ── MAIN ── */
+.main{margin-right:240px;flex:1;min-height:100vh;display:flex;flex-direction:column;}
+.topbar{background:var(--s1);border-bottom:1px solid var(--border);padding:0 28px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:40;}
+.page-title{font-size:20px;font-weight:800;}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.tb-btn{background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:8px 16px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:6px;}
+.tb-btn:hover{border-color:var(--g1);color:var(--g3);}
+.tb-btn.primary{background:linear-gradient(135deg,var(--g3),var(--g1));color:#fff;border:none;}
+.tb-btn.primary:hover{transform:translateY(-1px);box-shadow:0 4px 15px rgba(31,166,122,.3);}
+.content{padding:24px 28px;flex:1;}
+
+/* ── SCREENS ── */
+.screen{display:none;}
+.screen.active{display:block;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ── STATS CARDS ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.stat-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:20px;position:relative;overflow:hidden;transition:.2s;}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--g1),var(--g3));}
+.stat-card:hover{border-color:rgba(31,166,122,.3);transform:translateY(-2px);}
+.stat-label{font-size:12px;color:var(--muted);margin-bottom:8px;}
+.stat-val{font-size:28px;font-weight:900;color:var(--text);}
+.stat-sub{font-size:11px;color:var(--ok);margin-top:4px;}
+.stat-ico{position:absolute;top:16px;left:16px;font-size:28px;opacity:.3;}
+
+/* ── TABLE ── */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px;}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:15px;font-weight:700;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{padding:11px 16px;text-align:right;font-size:11px;font-weight:700;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;background:var(--s2);}
+td{padding:12px 16px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(31,166,122,.03);}
+.badge{display:inline-block;padding:3px 10px;border-radius:50px;font-size:10px;font-weight:700;}
+.badge-ok{background:rgba(52,211,153,.15);color:var(--ok);}
+.badge-warn{background:rgba(255,179,71,.15);color:var(--warn);}
+.badge-err{background:rgba(255,107,107,.15);color:var(--err);}
+.badge-blue{background:rgba(78,205,196,.15);color:#4ECDC4;}
+.badge-muted{background:rgba(122,173,160,.1);color:var(--muted);}
+
+/* ── FORM ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-grid.full{grid-template-columns:1fr;}
+.fg{margin-bottom:0;}
+.fl{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px;}
+.fi,.fs,.ft{width:100%;background:var(--s2);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:10px 14px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;outline:none;transition:.2s;}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--g1);}
+.fs option{background:var(--s2);}
+.ft{resize:vertical;min-height:80px;}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;padding:20px;}
+.overlay.open{display:flex;animation:fadeIn .2s ease;}
+.modal{background:var(--s1);border:1px solid rgba(31,166,122,.2);border-radius:16px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;}
+.modal-hdr{padding:20px 20px 0;display:flex;align-items:center;justify-content:space-between;}
+.modal-ttl{font-size:17px;font-weight:800;}
+.mclose{background:var(--s2);border:none;color:var(--muted);width:32px;height:32px;border-radius:7px;cursor:pointer;font-size:16px;}
+.mclose:hover{color:var(--text);}
+.modal-body{padding:20px;}
+
+/* ── SEARCH BAR ── */
+.search-bar{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap;}
+.search-inp{background:var(--s2);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:9px 16px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;outline:none;flex:1;min-width:200px;}
+.search-inp:focus{border-color:var(--g1);}
+.filter-sel{background:var(--s2);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:9px 14px;color:var(--text);font-family:'Cairo',sans-serif;font-size:12px;outline:none;cursor:pointer;}
+.filter-sel:focus{border-color:var(--g1);}
+
+/* ── WORKER AVATAR ── */
+.w-av{width:36px;height:36px;background:var(--s2);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+
+/* ── ACTION BTNS ── */
+.act-btn{background:none;border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:5px 10px;cursor:pointer;font-size:12px;font-family:'Cairo',sans-serif;color:var(--muted);transition:.2s;}
+.act-btn:hover{border-color:var(--g1);color:var(--g3);}
+.act-btn.del:hover{border-color:var(--err);color:var(--err);}
+.act-btn.view:hover{border-color:#4ECDC4;color:#4ECDC4;}
+
+/* ── TOGGLE SWITCH ── */
+.toggle{position:relative;display:inline-block;width:40px;height:22px;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--s3);border-radius:22px;cursor:pointer;transition:.3s;}
+.toggle-slider:before{content:'';position:absolute;height:16px;width:16px;left:3px;bottom:3px;background:var(--muted);border-radius:50%;transition:.3s;}
+.toggle input:checked + .toggle-slider{background:var(--g1);}
+.toggle input:checked + .toggle-slider:before{transform:translateX(18px);background:#fff;}
+
+/* ── CHART BARS ── */
+.mini-chart{display:flex;align-items:flex-end;gap:4px;height:48px;}
+.bar{background:linear-gradient(to top,var(--g2),var(--g3));border-radius:3px 3px 0 0;flex:1;min-width:8px;transition:.3s;}
+
+/* ── LOGIN ── */
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;width:100%;background:var(--bg);}
+.login-card{background:var(--s1);border:1px solid rgba(31,166,122,.2);border-radius:20px;padding:40px;width:380px;}
+.login-logo{font-size:36px;font-weight:900;background:linear-gradient(135deg,var(--g3),var(--g1));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;}
+.login-sub{color:var(--muted);font-size:13px;margin-bottom:28px;}
+
+/* ── PAGINATION ── */
+.pag{display:flex;align-items:center;gap:8px;padding:14px 20px;border-top:1px solid var(--border);}
+.pag-btn{background:var(--s2);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:6px 12px;cursor:pointer;font-size:12px;font-family:'Cairo',sans-serif;color:var(--muted);}
+.pag-btn:hover,.pag-btn.active{border-color:var(--g1);color:var(--g3);}
+.pag-info{font-size:12px;color:var(--muted);margin-right:auto;}
+
+/* ── TOAST ── */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid rgba(31,166,122,.25);border-radius:50px;padding:10px 22px;font-size:13px;font-weight:600;z-index:500;opacity:0;transition:.3s;pointer-events:none;}
+.toast.show{opacity:1;}
+
+/* ── LOADER ── */
+.loader{text-align:center;padding:48px;color:var(--muted);}
+.spin{display:inline-block;width:32px;height:32px;border:3px solid rgba(31,166,122,.2);border-top-color:var(--g1);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── EMPTY ── */
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
+.empty-state svg{opacity:.3;margin-bottom:12px;}
+
+@media(max-width:900px){
+  .sidebar{width:60px;}
+  .sidebar .nav-item span,.sidebar-logo .sub,.sidebar-logo .name,.admin-name,.admin-role,.nav-section{display:none;}
+  .main{margin-right:60px;}
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .form-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="login-page" style="width:100%">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">خدم</div>
+      <div class="login-sub">لوحة تحكم الأدمن</div>
+      <div class="fg" style="margin-bottom:14px">
+        <label class="fl">البريد الإلكتروني</label>
+        <input class="fi" id="login-email" type="email" placeholder="admin@khadim.ae">
+      </div>
+      <div class="fg" style="margin-bottom:20px">
+        <label class="fl">كلمة المرور</label>
+        <input class="fi" id="login-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div id="login-err" style="color:var(--err);font-size:12px;margin-bottom:12px"></div>
+      <button class="tb-btn primary" style="width:100%;justify-content:center;padding:12px" onclick="doLogin()">دخول للوحة التحكم</button>
+      <div style="margin-top:16px;text-align:center">
+        <label class="fl" style="display:block;margin-bottom:6px">Supabase URL</label>
+        <input class="fi" id="sb-url" placeholder="https://xxx.supabase.co" style="margin-bottom:8px">
+        <label class="fl" style="display:block;margin-bottom:6px">Anon Key</label>
+        <input class="fi" id="sb-key" placeholder="eyJ...">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADMIN APP ══ -->
+<div id="admin-app" style="display:none;width:100%;display:none">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="name">خدم</div>
+    <div class="sub">Admin Panel</div>
+  </div>
+  <nav class="nav-menu">
+    <div class="nav-section">الرئيسية</div>
+    <div class="nav-item active" onclick="showScreen('dashboard')">
+      <span class="ico">📊</span><span>لوحة المعلومات</span>
+    </div>
+    <div class="nav-section">إدارة</div>
+    <div class="nav-item" onclick="showScreen('workers')">
+      <span class="ico">👷</span><span>العمال</span>
+    </div>
+    <div class="nav-item" onclick="showScreen('bookings')">
+      <span class="ico">📋</span><span>الحجوزات</span>
+    </div>
+    <div class="nav-item" onclick="showScreen('users')">
+      <span class="ico">👥</span><span>المستخدمون</span>
+    </div>
+    <div class="nav-section">الإعدادات</div>
+    <div class="nav-item" onclick="showScreen('categories')">
+      <span class="ico">🏷️</span><span>الفئات</span>
+    </div>
+    <div class="nav-item" onclick="showScreen('cities')">
+      <span class="ico">🏙️</span><span>المدن والمناطق</span>
+    </div>
+    <div class="nav-item" onclick="showScreen('nationalities')">
+      <span class="ico">🌍</span><span>الجنسيات</span>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="admin-badge">
+      <div class="admin-av">👤</div>
+      <div><div class="admin-name" id="admin-name">Admin</div><div class="admin-role">مدير النظام</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div class="page-title" id="page-title">لوحة المعلومات</div>
+    <div class="topbar-right">
+      <button class="tb-btn" onclick="doLogout()">🚪 خروج</button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ── DASHBOARD ── -->
+    <div class="screen active" id="sc-dashboard">
+      <div class="stats-row" id="dash-stats">
+        <div class="loader"><div class="spin"></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <div class="card-header"><div class="card-title">📋 آخر الحجوزات</div></div>
+          <div id="dash-bookings"><div class="loader"><div class="spin"></div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">👷 أحدث العمال</div></div>
+          <div id="dash-workers"><div class="loader"><div class="spin"></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── WORKERS ── -->
+    <div class="screen" id="sc-workers">
+      <div class="search-bar">
+        <input class="search-inp" id="w-search" placeholder="ابحث باسم العامل..." oninput="filterWorkers()">
+        <select class="filter-sel" id="w-status" onchange="filterWorkers()">
+          <option value="">كل الحالات</option>
+          <option value="available">متاح</option>
+          <option value="busy">مشغول</option>
+          <option value="new">جديد</option>
+        </select>
+        <button class="tb-btn primary" onclick="openWorkerModal()">+ إضافة عامل</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>العامل</th><th>الفئات</th><th>الجنسية</th><th>التقييم</th>
+              <th>الحالة</th><th>فعّال</th><th>إجراءات</th>
+            </tr></thead>
+            <tbody id="workers-tbody"></tbody>
+          </table>
+        </div>
+        <div class="pag" id="workers-pag"></div>
+      </div>
+    </div>
+
+    <!-- ── BOOKINGS ── -->
+    <div class="screen" id="sc-bookings">
+      <div class="search-bar">
+        <input class="search-inp" id="b-search" placeholder="ابحث برقم الحجز أو العنوان..." oninput="filterBookings()">
+        <select class="filter-sel" id="b-status" onchange="filterBookings()">
+          <option value="">كل الحالات</option>
+          <option value="pending">قيد الانتظار</option>
+          <option value="confirmed">مؤكد</option>
+          <option value="in_progress">جاري</option>
+          <option value="completed">مكتمل</option>
+          <option value="cancelled">ملغي</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>#</th><th>المستخدم</th><th>العامل</th><th>الخدمة</th>
+              <th>التاريخ</th><th>المبلغ</th><th>الحالة</th><th>إجراءات</th>
+            </tr></thead>
+            <tbody id="bookings-tbody"></tbody>
+          </table>
+        </div>
+        <div class="pag" id="bookings-pag"></div>
+      </div>
+    </div>
+
+    <!-- ── USERS ── -->
+    <div class="screen" id="sc-users">
+      <div class="search-bar">
+        <input class="search-inp" id="u-search" placeholder="ابحث بالاسم أو الإيميل..." oninput="filterUsers()">
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>المستخدم</th><th>الإيميل</th><th>المدينة</th>
+              <th>عدد الحجوزات</th><th>تاريخ التسجيل</th>
+            </tr></thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CATEGORIES ── -->
+    <div class="screen" id="sc-categories">
+      <div class="search-bar">
+        <input class="search-inp" id="cat-search" placeholder="ابحث عن فئة...">
+        <button class="tb-btn primary" onclick="openCatModal()">+ إضافة فئة</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>الأيقونة</th><th>الاسم عربي</th><th>الاسم إنجليزي</th>
+              <th>السعر/مهمة</th><th>السعر/ساعة</th><th>السعر/يوم</th>
+              <th>فعّالة</th><th>إجراءات</th>
+            </tr></thead>
+            <tbody id="cats-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CITIES ── -->
+    <div class="screen" id="sc-cities">
+      <div class="search-bar">
+        <button class="tb-btn primary" onclick="openCityModal()">+ إضافة مدينة</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <div class="card-header"><div class="card-title">🏙️ المدن</div></div>
+          <div class="table-wrap">
+            <table><thead><tr><th>المدينة</th><th>EN</th><th>فعّالة</th><th></th></tr></thead>
+            <tbody id="cities-tbody"></tbody></table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📍 مناطق: <span id="selected-city-name">اختر مدينة</span></div>
+            <button class="tb-btn" id="add-area-btn" style="display:none" onclick="openAreaModal()">+ منطقة</button>
+          </div>
+          <div class="table-wrap">
+            <table><thead><tr><th>المنطقة</th><th>فعّالة</th><th></th></tr></thead>
+            <tbody id="areas-tbody"></tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── NATIONALITIES ── -->
+    <div class="screen" id="sc-nationalities">
+      <div class="search-bar">
+        <button class="tb-btn primary" onclick="openNatModal()">+ إضافة جنسية</button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>العلم</th><th>عربي</th><th>English</th><th>فعّالة</th><th></th></tr></thead>
+            <tbody id="nats-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end content -->
+</div><!-- end main -->
+</div><!-- end admin-app -->
+
+<!-- ══ WORKER MODAL ══ -->
+<div class="overlay" id="worker-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-ttl" id="worker-modal-title">إضافة عامل جديد</div>
+      <button class="mclose" onclick="closeModal('worker-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:16px">
+        <div class="fg"><label class="fl">الاسم عربي</label><input class="fi" id="w-name-ar" placeholder="محمد أحمد"></div>
+        <div class="fg"><label class="fl">الاسم إنجليزي</label><input class="fi" id="w-name-en" placeholder="Mohamed Ahmed"></div>
+        <div class="fg"><label class="fl">الدور عربي</label><input class="fi" id="w-role-ar" placeholder="خادمة منزلية"></div>
+        <div class="fg"><label class="fl">الدور إنجليزي</label><input class="fi" id="w-role-en" placeholder="House Maid"></div>
+        <div class="fg"><label class="fl">الجنسية</label>
+          <select class="fs" id="w-nat-id"><option value="">-- اختر --</option></select></div>
+        <div class="fg"><label class="fl">الجنس</label>
+          <select class="fs" id="w-gender">
+            <option value="female">أنثى</option>
+            <option value="male">ذكر</option>
+            <option value="any">غير محدد</option>
+          </select></div>
+        <div class="fg"><label class="fl">سنوات الخبرة</label><input class="fi" type="number" id="w-exp" min="0" value="1"></div>
+        <div class="fg"><label class="fl">الحالة</label>
+          <select class="fs" id="w-status-sel">
+            <option value="available">متاح</option>
+            <option value="busy">مشغول</option>
+            <option value="new">جديد</option>
+          </select></div>
+        <div class="fg"><label class="fl">الأيقونة (emoji)</label><input class="fi" id="w-icon" placeholder="👩" maxlength="4"></div>
+        <div class="fg"><label class="fl">التقييم</label><input class="fi" type="number" id="w-rating" min="1" max="5" step="0.1" value="5.0"></div>
+      </div>
+      <div style="margin-bottom:16px">
+        <label class="fl">الفئات (اختر أكثر من واحدة)</label>
+        <div id="w-cats-check" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
+      </div>
+      <div style="margin-bottom:16px">
+        <label class="fl" style="margin-bottom:10px;display:block">الأسعار (اتركها فارغة لاستخدام سعر الفئة)</label>
+        <div class="form-grid">
+          <div class="fg"><label class="fl">لكل مهمة</label><input class="fi" type="number" id="w-p-fixed" placeholder="من الفئة"></div>
+          <div class="fg"><label class="fl">بالساعة</label><input class="fi" type="number" id="w-p-hourly" placeholder="من الفئة"></div>
+          <div class="fg"><label class="fl">باليوم</label><input class="fi" type="number" id="w-p-daily" placeholder="من الفئة"></div>
+          <div class="fg"><label class="fl">بالأسبوع</label><input class="fi" type="number" id="w-p-weekly" placeholder="من الفئة"></div>
+          <div class="fg"><label class="fl">بالشهر</label><input class="fi" type="number" id="w-p-monthly" placeholder="من الفئة"></div>
+        </div>
+      </div>
+      <div id="worker-err" style="color:var(--err);font-size:12px;margin-bottom:12px"></div>
+      <button class="tb-btn primary" style="width:100%;justify-content:center;padding:12px" onclick="saveWorker()">💾 حفظ العامل</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CATEGORY MODAL ══ -->
+<div class="overlay" id="cat-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-ttl" id="cat-modal-title">إضافة فئة</div>
+      <button class="mclose" onclick="closeModal('cat-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="margin-bottom:16px">
+        <div class="fg"><label class="fl">الاسم عربي</label><input class="fi" id="cat-name-ar" placeholder="تنظيف عام"></div>
+        <div class="fg"><label class="fl">English Name</label><input class="fi" id="cat-name-en" placeholder="General Cleaning"></div>
+        <div class="fg"><label class="fl">الأيقونة</label><input class="fi" id="cat-icon" placeholder="🧹" maxlength="4"></div>
+        <div class="fg"><label class="fl">icon_key</label><input class="fi" id="cat-icon-key" placeholder="cleaning"></div>
+        <div class="fg"><label class="fl">سعر/مهمة</label><input class="fi" type="number" id="cat-p-fixed"></div>
+        <div class="fg"><label class="fl">سعر/ساعة</label><input class="fi" type="number" id="cat-p-hourly"></div>
+        <div class="fg"><label class="fl">سعر/يوم</label><input class="fi" type="number" id="cat-p-daily"></div>
+        <div class="fg"><label class="fl">سعر/أسبوع</label><input class="fi" type="number" id="cat-p-weekly"></div>
+        <div class="fg"><label class="fl">سعر/شهر</label><input class="fi" type="number" id="cat-p-monthly"></div>
+        <div class="fg"><label class="fl">الترتيب</label><input class="fi" type="number" id="cat-sort" value="0"></div>
+      </div>
+      <button class="tb-btn primary" style="width:100%;justify-content:center;padding:12px" onclick="saveCat()">💾 حفظ الفئة</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ GENERIC SMALL MODAL ══ -->
+<div class="overlay" id="small-modal">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hdr">
+      <div class="modal-ttl" id="small-modal-title"></div>
+      <button class="mclose" onclick="closeModal('small-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="small-modal-body"></div>
+  </div>
+</div>
+
+<!-- ══ BOOKING DETAIL MODAL ══ -->
+<div class="overlay" id="booking-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-ttl">تفاصيل الحجز</div>
+      <button class="mclose" onclick="closeModal('booking-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="booking-detail-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var SB = null;
+var ADMIN_USER = null;
+var ALL_WORKERS = [];
+var ALL_BOOKINGS = [];
+var ALL_USERS = [];
+var ALL_CATS = [];
+var ALL_CITIES = [];
+var ALL_AREAS = [];
+var ALL_NATS = [];
+var editingId = null;
+var selectedCityId = null;
+var PAGE_SIZE = 20;
+var workersPage = 1;
+var bookingsPage = 1;
+
+// ── BOOT ──
+window.addEventListener('DOMContentLoaded', function() {
+  var url = localStorage.getItem('admin_sb_url');
+  var key = localStorage.getItem('admin_sb_key');
+  if (url) document.getElementById('sb-url').value = url;
+  if (key) document.getElementById('sb-key').value = key;
+  var sess = localStorage.getItem('admin_session');
+  if (sess && url && key) {
+    SB = supabase.createClient(url, key, {global:{headers:{'apikey':key,'Cache-Control':'no-cache'}}});
+    SB.auth.getSession().then(function(r) {
+      if (r.data.session) {
+        ADMIN_USER = r.data.session.user;
+        bootAdmin();
+      }
+    });
+  }
+});
+
+async function doLogin() {
+  var url = document.getElementById('sb-url').value.trim();
+  var key = document.getElementById('sb-key').value.trim();
+  var email = document.getElementById('login-email').value.trim();
+  var pass  = document.getElementById('login-pass').value;
+  if (!url || !key || !email || !pass) { document.getElementById('login-err').textContent = 'أكمل جميع الحقول'; return; }
+  SB = supabase.createClient(url, key, {global:{headers:{'apikey':key,'Cache-Control':'no-cache'}}});
+  var r = await SB.auth.signInWithPassword({email, password: pass});
+  if (r.error) { document.getElementById('login-err').textContent = r.error.message; return; }
+  ADMIN_USER = r.data.user;
+  localStorage.setItem('admin_sb_url', url);
+  localStorage.setItem('admin_sb_key', key);
+  localStorage.setItem('admin_session', '1');
+  bootAdmin();
+}
+
+async function doLogout() {
+  if (SB) await SB.auth.signOut();
+  localStorage.removeItem('admin_session');
+  location.reload();
+}
+
+async function bootAdmin() {
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('admin-app').style.display = 'flex';
+  document.getElementById('admin-name').textContent = ADMIN_USER.email.split('@')[0];
+  await Promise.all([loadDashboard(), loadAllWorkers(), loadAllBookings(), loadCats(), loadCities(), loadNats()]);
+}
+
+// ── SCREENS ──
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('sc-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  event.currentTarget.classList.add('active');
+  var titles = {dashboard:'لوحة المعلومات',workers:'العمال',bookings:'الحجوزات',users:'المستخدمون',categories:'الفئات',cities:'المدن والمناطق',nationalities:'الجنسيات'};
+  document.getElementById('page-title').textContent = titles[name] || name;
+  if (name === 'users') loadUsers();
+}
+
+// ── DASHBOARD ──
+async function loadDashboard() {
+  var [wb, ww, wu, wrev] = await Promise.all([
+    SB.from('bookings').select('id', {count:'exact', head:true}),
+    SB.from('workers').select('id', {count:'exact', head:true}).eq('is_active', true),
+    SB.from('profiles').select('id', {count:'exact', head:true}),
+    SB.from('bookings').select('total').eq('status','completed')
+  ]);
+  var rev = (wrev.data||[]).reduce(function(s,b){ return s + (b.total||0); }, 0);
+  document.getElementById('dash-stats').innerHTML =
+    statCard('📋', 'إجمالي الحجوزات', wb.count||0, '', '#4ECDC4') +
+    statCard('👷', 'العمال الفعالون', ww.count||0, '', 'var(--g3)') +
+    statCard('👥', 'المستخدمون', wu.count||0, '', 'var(--warn)') +
+    statCard('💰', 'الإيرادات المكتملة', rev.toLocaleString()+' د.إ', '', 'var(--ok)');
+
+  // recent bookings
+  var rb = await SB.from('bookings').select('*, workers(name,icon)').order('created_at',{ascending:false}).limit(5);
+  var html = '<table style="width:100%"><thead><tr><th>العامل</th><th>التاريخ</th><th>المبلغ</th><th>الحالة</th></tr></thead><tbody>';
+  (rb.data||[]).forEach(function(b) {
+    html += '<tr><td>' + (b.workers?.icon||'') + ' ' + (b.workers?.name||'-') + '</td>' +
+      '<td>' + (b.service_date||'-') + '</td>' +
+      '<td>' + (b.total||0) + ' د.إ</td>' +
+      '<td>' + statusBadge(b.status) + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('dash-bookings').innerHTML = html;
+
+  // recent workers
+  var rw = await SB.from('workers').select('*').order('created_at',{ascending:false}).limit(5);
+  var html2 = '<table style="width:100%"><thead><tr><th>العامل</th><th>التقييم</th><th>الحالة</th></tr></thead><tbody>';
+  (rw.data||[]).forEach(function(w) {
+    html2 += '<tr><td>' + (w.icon||'👤') + ' ' + w.name + '</td>' +
+      '<td>⭐ ' + w.rating + '</td>' +
+      '<td>' + workerStatusBadge(w.status) + '</td></tr>';
+  });
+  html2 += '</tbody></table>';
+  document.getElementById('dash-workers').innerHTML = html2;
+}
+
+function statCard(ico, label, val, sub, color) {
+  return '<div class="stat-card"><div class="stat-label">' + label + '</div>' +
+    '<div class="stat-val" style="color:' + color + '">' + val + '</div>' +
+    (sub ? '<div class="stat-sub">' + sub + '</div>' : '') +
+    '<div class="stat-ico">' + ico + '</div></div>';
+}
+
+// ── WORKERS ──
+async function loadAllWorkers() {
+  var r = await SB.from('workers').select('*, nationalities(name_ar), worker_categories(categories(name_ar))').order('created_at',{ascending:false});
+  ALL_WORKERS = r.data || [];
+  renderWorkers();
+}
+
+function filterWorkers() {
+  workersPage = 1;
+  renderWorkers();
+}
+
+function renderWorkers() {
+  var search = (document.getElementById('w-search')||{}).value?.toLowerCase() || '';
+  var status = (document.getElementById('w-status')||{}).value || '';
+  var list = ALL_WORKERS.filter(function(w) {
+    var ms = !status || w.status === status;
+    var mq = !search || w.name.toLowerCase().includes(search);
+    return ms && mq;
+  });
+  var start = (workersPage-1)*PAGE_SIZE, end = start+PAGE_SIZE;
+  var page = list.slice(start, end);
+  var tb = document.getElementById('workers-tbody');
+  if (!tb) return;
+  tb.innerHTML = page.map(function(w) {
+    var cats = (w.worker_categories||[]).map(function(wc){ return wc.categories?.name_ar||''; }).filter(Boolean).join('، ');
+    return '<tr>' +
+      '<td><div style="display:flex;align-items:center;gap:10px"><div class="w-av">' + (w.icon||'👤') + '</div><div>' +
+        '<div style="font-weight:700">' + w.name + '</div>' +
+        '<div style="font-size:11px;color:var(--muted)">' + (w.role_ar||'') + '</div>' +
+      '</div></div></td>' +
+      '<td style="font-size:12px;color:var(--muted);max-width:150px">' + (cats||'—') + '</td>' +
+      '<td>' + (w.nationalities?.name_ar||w.nationality||'—') + '</td>' +
+      '<td>⭐ ' + (w.rating||5) + ' <span style="color:var(--muted);font-size:11px">(' + (w.reviews_count||0) + ')</span></td>' +
+      '<td>' + workerStatusBadge(w.status) + '</td>' +
+      '<td><label class="toggle"><input type="checkbox" ' + (w.is_active?'checked':'') + ' onchange="toggleWorkerActive(\'' + w.id + '\',this.checked)"><span class="toggle-slider"></span></label></td>' +
+      '<td><button class="act-btn" onclick="openWorkerModal(\'' + w.id + '\')">✏️</button> ' +
+      '<button class="act-btn del" onclick="deleteWorker(\'' + w.id + '\')">🗑</button></td>' +
+    '</tr>';
+  }).join('') || '<tr><td colspan="7" class="empty-state">لا توجد نتائج</td></tr>';
+
+  // pagination
+  var total = list.length;
+  var pages = Math.ceil(total/PAGE_SIZE);
+  var pag = document.getElementById('workers-pag');
+  if (pag) {
+    pag.innerHTML = '<span class="pag-info">إجمالي: ' + total + '</span>';
+    for (var i=1;i<=Math.min(pages,10);i++) {
+      pag.innerHTML += '<button class="pag-btn ' + (i===workersPage?'active':'') + '" onclick="workersPage=' + i + ';renderWorkers()">' + i + '</button>';
+    }
+  }
+}
+
+async function toggleWorkerActive(id, val) {
+  await SB.from('workers').update({is_active: val}).eq('id', id);
+  toast(val ? '✅ تم تفعيل العامل' : '⛔ تم إيقاف العامل');
+}
+
+async function deleteWorker(id) {
+  if (!confirm('هل تريد حذف هذا العامل؟')) return;
+  await SB.from('workers').delete().eq('id', id);
+  ALL_WORKERS = ALL_WORKERS.filter(function(w){ return w.id !== id; });
+  renderWorkers();
+  toast('تم الحذف');
+}
+
+async function openWorkerModal(id) {
+  editingId = id || null;
+  document.getElementById('worker-modal-title').textContent = id ? 'تعديل العامل' : 'إضافة عامل جديد';
+  document.getElementById('worker-err').textContent = '';
+  // clear fields
+  ['w-name-ar','w-name-en','w-role-ar','w-role-en','w-icon','w-exp','w-rating',
+   'w-p-fixed','w-p-hourly','w-p-daily','w-p-weekly','w-p-monthly'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.value = id === 'w-rating' ? '5.0' : id === 'w-exp' ? '1' : '';
+  });
+
+  // fill nationality select
+  var natSel = document.getElementById('w-nat-id');
+  natSel.innerHTML = '<option value="">-- اختر --</option>' +
+    ALL_NATS.map(function(n){ return '<option value="' + n.id + '">' + n.flag + ' ' + n.name_ar + '</option>'; }).join('');
+
+  // fill categories checkboxes
+  var catWrap = document.getElementById('w-cats-check');
+  catWrap.innerHTML = ALL_CATS.map(function(c) {
+    return '<label style="display:flex;align-items:center;gap:6px;background:var(--s2);padding:6px 12px;border-radius:8px;cursor:pointer;font-size:13px">' +
+      '<input type="checkbox" value="' + c.id + '" style="accent-color:var(--g1)"> ' + c.icon + ' ' + c.name_ar + '</label>';
+  }).join('');
+
+  if (id) {
+    var w = ALL_WORKERS.find(function(x){ return x.id === id; });
+    if (w) {
+      document.getElementById('w-name-ar').value = w.name || '';
+      document.getElementById('w-name-en').value = w.name_en || '';
+      document.getElementById('w-role-ar').value = w.role_ar || '';
+      document.getElementById('w-role-en').value = w.role_en || '';
+      document.getElementById('w-icon').value = w.icon || '';
+      document.getElementById('w-exp').value = w.experience_years || 1;
+      document.getElementById('w-rating').value = w.rating || 5;
+      document.getElementById('w-gender').value = w.gender || 'any';
+      document.getElementById('w-status-sel').value = w.status || 'available';
+      if (w.nationality_id) document.getElementById('w-nat-id').value = w.nationality_id;
+      if (w.price_fixed)   document.getElementById('w-p-fixed').value = w.price_fixed;
+      if (w.price_hourly)  document.getElementById('w-p-hourly').value = w.price_hourly;
+      if (w.price_daily)   document.getElementById('w-p-daily').value = w.price_daily;
+      if (w.price_weekly)  document.getElementById('w-p-weekly').value = w.price_weekly;
+      if (w.price_monthly) document.getElementById('w-p-monthly').value = w.price_monthly;
+      // check existing categories
+      var wCatIds = (w.worker_categories||[]).map(function(wc){ return wc.categories?.id||wc.category_id; });
+      catWrap.querySelectorAll('input[type=checkbox]').forEach(function(cb) {
+        if (wCatIds.includes(cb.value)) cb.checked = true;
+      });
+    }
+  }
+  document.getElementById('worker-modal').classList.add('open');
+}
+
+async function saveWorker() {
+  var nameAr = document.getElementById('w-name-ar').value.trim();
+  var nameEn = document.getElementById('w-name-en').value.trim();
+  var roleAr = document.getElementById('w-role-ar').value.trim();
+  var roleEn = document.getElementById('w-role-en').value.trim();
+  var icon   = document.getElementById('w-icon').value.trim() || '👤';
+  var exp    = parseInt(document.getElementById('w-exp').value) || 0;
+  var rating = parseFloat(document.getElementById('w-rating').value) || 5;
+  var gender = document.getElementById('w-gender').value;
+  var status = document.getElementById('w-status-sel').value;
+  var natId  = document.getElementById('w-nat-id').value || null;
+
+  if (!nameAr) { document.getElementById('worker-err').textContent = 'الاسم مطلوب'; return; }
+
+  var payload = {
+    name: nameAr, name_en: nameEn, role_ar: roleAr, role_en: roleEn,
+    icon: icon, experience_years: exp, rating: rating,
+    gender: gender, status: status, nationality_id: natId, is_active: true,
+    price_fixed:   parseFloat(document.getElementById('w-p-fixed').value)   || null,
+    price_hourly:  parseFloat(document.getElementById('w-p-hourly').value)  || null,
+    price_daily:   parseFloat(document.getElementById('w-p-daily').value)   || null,
+    price_weekly:  parseFloat(document.getElementById('w-p-weekly').value)  || null,
+    price_monthly: parseFloat(document.getElementById('w-p-monthly').value) || null,
+  };
+
+  var wId = editingId;
+  if (editingId) {
+    await SB.from('workers').update(payload).eq('id', editingId);
+  } else {
+    var r = await SB.from('workers').insert(payload).select().single();
+    if (r.error) { document.getElementById('worker-err').textContent = r.error.message; return; }
+    wId = r.data.id;
+  }
+
+  // update worker_categories
+  await SB.from('worker_categories').delete().eq('worker_id', wId);
+  var checked = Array.from(document.getElementById('w-cats-check').querySelectorAll('input:checked'));
+  if (checked.length) {
+    await SB.from('worker_categories').insert(checked.map(function(cb){ return {worker_id: wId, category_id: cb.value}; }));
+  }
+
+  closeModal('worker-modal');
+  await loadAllWorkers();
+  toast(editingId ? '✅ تم تحديث العامل' : '✅ تم إضافة العامل');
+}
+
+// ── BOOKINGS ──
+async function loadAllBookings() {
+  var r = await SB.from('bookings').select('*, workers(name,icon,role_ar), profiles(full_name)').order('created_at',{ascending:false}).limit(200);
+  ALL_BOOKINGS = r.data || [];
+  renderBookings();
+}
+
+function filterBookings() { bookingsPage = 1; renderBookings(); }
+
+function renderBookings() {
+  var search = (document.getElementById('b-search')||{}).value?.toLowerCase() || '';
+  var status = (document.getElementById('b-status')||{}).value || '';
+  var list = ALL_BOOKINGS.filter(function(b) {
+    var ms = !status || b.status === status;
+    var mq = !search || (b.address||'').toLowerCase().includes(search);
+    return ms && mq;
+  });
+  var start = (bookingsPage-1)*PAGE_SIZE, end = start+PAGE_SIZE;
+  var page = list.slice(start, end);
+  var tb = document.getElementById('bookings-tbody');
+  if (!tb) return;
+  tb.innerHTML = page.map(function(b, i) {
+    return '<tr>' +
+      '<td style="font-size:11px;color:var(--muted)">' + (start+i+1) + '</td>' +
+      '<td>' + (b.profiles?.full_name||'—') + '</td>' +
+      '<td>' + (b.workers?.icon||'') + ' ' + (b.workers?.name||'—') + '</td>' +
+      '<td>' + PT_LABELS[b.pricing_type||'fixed'] + ' × ' + (b.quantity||1) + '</td>' +
+      '<td>' + (b.service_date||'—') + '<br><span style="color:var(--muted);font-size:11px">' + (b.service_time||'') + '</span></td>' +
+      '<td style="color:var(--g3);font-weight:700">' + (b.total||0) + ' د.إ</td>' +
+      '<td>' + statusBadge(b.status) + '</td>' +
+      '<td>' +
+        '<button class="act-btn view" onclick="viewBooking(\'' + b.id + '\')">عرض</button> ' +
+        '<select class="filter-sel" style="font-size:11px;padding:4px 8px" onchange="updateBookingStatus(\'' + b.id + '\',this.value)">' +
+          ['pending','confirmed','in_progress','completed','cancelled'].map(function(s){
+            return '<option value="' + s + '" ' + (b.status===s?'selected':'') + '>' + PT_LABELS[s] + '</option>';
+          }).join('') +
+        '</select>' +
+      '</td>' +
+    '</tr>';
+  }).join('') || '<tr><td colspan="8" class="empty-state">لا توجد حجوزات</td></tr>';
+
+  var pag = document.getElementById('bookings-pag');
+  if (pag) {
+    var pages = Math.ceil(list.length/PAGE_SIZE);
+    pag.innerHTML = '<span class="pag-info">إجمالي: ' + list.length + '</span>';
+    for (var i=1;i<=Math.min(pages,10);i++) {
+      pag.innerHTML += '<button class="pag-btn ' + (i===bookingsPage?'active':'') + '" onclick="bookingsPage=' + i + ';renderBookings()">' + i + '</button>';
+    }
+  }
+}
+
+async function updateBookingStatus(id, status) {
+  await SB.from('bookings').update({status: status}).eq('id', id);
+  var b = ALL_BOOKINGS.find(function(x){ return x.id === id; });
+  if (b) b.status = status;
+  renderBookings();
+  toast('تم تحديث حالة الحجز');
+}
+
+function viewBooking(id) {
+  var b = ALL_BOOKINGS.find(function(x){ return x.id === id; });
+  if (!b) return;
+  document.getElementById('booking-detail-body').innerHTML =
+    '<div style="display:grid;gap:12px">' +
+    row('العامل', (b.workers?.icon||'') + ' ' + (b.workers?.name||'—')) +
+    row('العنوان', b.address||'—') +
+    row('التاريخ', (b.service_date||'—') + ' ' + (b.service_time||'')) +
+    row('نوع التسعير', PT_LABELS[b.pricing_type||'fixed'] + ' × ' + (b.quantity||1)) +
+    row('المبلغ الأساسي', (b.subtotal||0) + ' د.إ') +
+    row('الضريبة', (b.vat||0) + ' د.إ') +
+    row('الإجمالي', '<strong style="color:var(--g3)">' + (b.total||0) + ' د.إ</strong>') +
+    row('الحالة', statusBadge(b.status)) +
+    row('ملاحظات', b.notes||'—') +
+    '</div>';
+  document.getElementById('booking-modal').classList.add('open');
+}
+
+function row(k, v) {
+  return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">' +
+    '<span style="color:var(--muted)">' + k + '</span><span>' + v + '</span></div>';
+}
+
+// ── USERS ──
+async function loadUsers() {
+  var r = await SB.from('profiles').select('*').order('created_at',{ascending:false});
+  ALL_USERS = r.data || [];
+  renderUsers();
+}
+
+function filterUsers() { renderUsers(); }
+
+function renderUsers() {
+  var search = (document.getElementById('u-search')||{}).value?.toLowerCase() || '';
+  var list = ALL_USERS.filter(function(u) {
+    return !search || (u.full_name||'').toLowerCase().includes(search);
+  });
+  var tb = document.getElementById('users-tbody');
+  if (!tb) return;
+  tb.innerHTML = list.map(function(u) {
+    return '<tr>' +
+      '<td>' + (u.avatar_emoji||'👤') + ' <strong>' + (u.full_name||'—') + '</strong></td>' +
+      '<td style="color:var(--muted);font-size:12px">' + (u.id||'').substring(0,8) + '...</td>' +
+      '<td>' + (u.city||'—') + '</td>' +
+      '<td>—</td>' +
+      '<td style="font-size:11px;color:var(--muted)">' + new Date(u.created_at).toLocaleDateString('ar-EG') + '</td>' +
+    '</tr>';
+  }).join('') || '<tr><td colspan="5" class="empty-state">لا يوجد مستخدمون</td></tr>';
+}
+
+// ── CATEGORIES ──
+async function loadCats() {
+  var r = await SB.from('categories').select('*').order('sort_order');
+  ALL_CATS = r.data || [];
+  renderCats();
+}
+
+function renderCats() {
+  var tb = document.getElementById('cats-tbody');
+  if (!tb) return;
+  tb.innerHTML = ALL_CATS.map(function(c) {
+    return '<tr>' +
+      '<td style="font-size:24px">' + (c.icon||'') + '</td>' +
+      '<td><strong>' + c.name_ar + '</strong></td>' +
+      '<td style="color:var(--muted)">' + (c.name_en||'—') + '</td>' +
+      '<td>' + (c.price_fixed||'—') + '</td>' +
+      '<td>' + (c.price_hourly||'—') + '</td>' +
+      '<td>' + (c.price_daily||'—') + '</td>' +
+      '<td><label class="toggle"><input type="checkbox" ' + (c.is_active?'checked':'') + ' onchange="toggleCat(\'' + c.id + '\',this.checked)"><span class="toggle-slider"></span></label></td>' +
+      '<td><button class="act-btn" onclick="openCatModal(\'' + c.id + '\')">✏️</button></td>' +
+    '</tr>';
+  }).join('');
+}
+
+async function toggleCat(id, val) {
+  await SB.from('categories').update({is_active: val}).eq('id', id);
+  var c = ALL_CATS.find(function(x){ return x.id === id; });
+  if (c) c.is_active = val;
+  toast(val ? '✅ تم تفعيل الفئة' : '⛔ تم إيقاف الفئة');
+}
+
+function openCatModal(id) {
+  editingId = id || null;
+  document.getElementById('cat-modal-title').textContent = id ? 'تعديل الفئة' : 'إضافة فئة';
+  ['cat-name-ar','cat-name-en','cat-icon','cat-icon-key','cat-p-fixed','cat-p-hourly','cat-p-daily','cat-p-weekly','cat-p-monthly','cat-sort'].forEach(function(fid){
+    var el = document.getElementById(fid); if (el) el.value = '';
+  });
+  if (id) {
+    var c = ALL_CATS.find(function(x){ return x.id === id; });
+    if (c) {
+      document.getElementById('cat-name-ar').value = c.name_ar||'';
+      document.getElementById('cat-name-en').value = c.name_en||'';
+      document.getElementById('cat-icon').value = c.icon||'';
+      document.getElementById('cat-icon-key').value = c.icon_key||'';
+      document.getElementById('cat-sort').value = c.sort_order||0;
+      if (c.price_fixed)   document.getElementById('cat-p-fixed').value   = c.price_fixed;
+      if (c.price_hourly)  document.getElementById('cat-p-hourly').value  = c.price_hourly;
+      if (c.price_daily)   document.getElementById('cat-p-daily').value   = c.price_daily;
+      if (c.price_weekly)  document.getElementById('cat-p-weekly').value  = c.price_weekly;
+      if (c.price_monthly) document.getElementById('cat-p-monthly').value = c.price_monthly;
+    }
+  }
+  document.getElementById('cat-modal').classList.add('open');
+}
+
+async function saveCat() {
+  var payload = {
+    name_ar:   document.getElementById('cat-name-ar').value.trim(),
+    name_en:   document.getElementById('cat-name-en').value.trim(),
+    icon:      document.getElementById('cat-icon').value.trim(),
+    icon_key:  document.getElementById('cat-icon-key').value.trim(),
+    sort_order:parseInt(document.getElementById('cat-sort').value)||0,
+    price_fixed:   parseFloat(document.getElementById('cat-p-fixed').value)||null,
+    price_hourly:  parseFloat(document.getElementById('cat-p-hourly').value)||null,
+    price_daily:   parseFloat(document.getElementById('cat-p-daily').value)||null,
+    price_weekly:  parseFloat(document.getElementById('cat-p-weekly').value)||null,
+    price_monthly: parseFloat(document.getElementById('cat-p-monthly').value)||null,
+  };
+  if (!payload.name_ar) { toast('الاسم العربي مطلوب'); return; }
+  if (editingId) { await SB.from('categories').update(payload).eq('id', editingId); }
+  else { await SB.from('categories').insert(payload); }
+  closeModal('cat-modal');
+  await loadCats();
+  toast('✅ تم الحفظ');
+}
+
+// ── CITIES & AREAS ──
+async function loadCities() {
+  var r = await SB.from('cities').select('*').order('sort_order');
+  ALL_CITIES = r.data || [];
+  renderCities();
+}
+
+function renderCities() {
+  var tb = document.getElementById('cities-tbody');
+  if (!tb) return;
+  tb.innerHTML = ALL_CITIES.map(function(c) {
+    return '<tr style="cursor:pointer" onclick="selectCity(\'' + c.id + '\',\'' + c.name_ar + '\')">' +
+      '<td><strong>' + c.name_ar + '</strong></td>' +
+      '<td style="color:var(--muted)">' + (c.name_en||'—') + '</td>' +
+      '<td><label class="toggle"><input type="checkbox" ' + (c.is_active?'checked':'') + ' onchange="toggleCity(\'' + c.id + '\',this.checked)" onclick="event.stopPropagation()"><span class="toggle-slider"></span></label></td>' +
+      '<td><button class="act-btn" onclick="event.stopPropagation();editCity(\'' + c.id + '\')">✏️</button></td>' +
+    '</tr>';
+  }).join('');
+}
+
+async function selectCity(id, name) {
+  selectedCityId = id;
+  document.getElementById('selected-city-name').textContent = name;
+  document.getElementById('add-area-btn').style.display = 'inline-flex';
+  var r = await SB.from('areas').select('*').eq('city_id', id).order('sort_order');
+  ALL_AREAS = r.data || [];
+  var tb = document.getElementById('areas-tbody');
+  tb.innerHTML = ALL_AREAS.map(function(a) {
+    return '<tr><td>' + a.name + '</td>' +
+      '<td><label class="toggle"><input type="checkbox" ' + (a.is_active?'checked':'') + ' onchange="toggleArea(\'' + a.id + '\',this.checked)"><span class="toggle-slider"></span></label></td>' +
+      '<td><button class="act-btn del" onclick="deleteArea(\'' + a.id + '\')">🗑</button></td>' +
+    '</tr>';
+  }).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px">لا توجد مناطق</td></tr>';
+}
+
+async function toggleCity(id, val) {
+  await SB.from('cities').update({is_active: val}).eq('id', id);
+}
+async function toggleArea(id, val) {
+  await SB.from('areas').update({is_active: val}).eq('id', id);
+}
+async function deleteArea(id) {
+  if (!confirm('حذف المنطقة؟')) return;
+  await SB.from('areas').delete().eq('id', id);
+  if (selectedCityId) selectCity(selectedCityId, document.getElementById('selected-city-name').textContent);
+}
+
+function openCityModal() {
+  document.getElementById('small-modal-title').textContent = 'إضافة مدينة';
+  document.getElementById('small-modal-body').innerHTML =
+    '<div class="fg" style="margin-bottom:12px"><label class="fl">الاسم عربي</label><input class="fi" id="city-ar" placeholder="دبي"></div>' +
+    '<div class="fg" style="margin-bottom:16px"><label class="fl">English</label><input class="fi" id="city-en" placeholder="Dubai"></div>' +
+    '<button class="tb-btn primary" style="width:100%;justify-content:center" onclick="saveCity()">💾 حفظ</button>';
+  document.getElementById('small-modal').classList.add('open');
+}
+
+async function saveCity() {
+  var ar = document.getElementById('city-ar').value.trim();
+  var en = document.getElementById('city-en').value.trim();
+  if (!ar) return;
+  await SB.from('cities').insert({name_ar: ar, name_en: en, is_active: true});
+  closeModal('small-modal');
+  await loadCities();
+  toast('✅ تمت الإضافة');
+}
+
+function editCity(id) {
+  var c = ALL_CITIES.find(function(x){ return x.id === id; });
+  if (!c) return;
+  document.getElementById('small-modal-title').textContent = 'تعديل مدينة';
+  document.getElementById('small-modal-body').innerHTML =
+    '<div class="fg" style="margin-bottom:12px"><label class="fl">الاسم عربي</label><input class="fi" id="city-ar" value="' + c.name_ar + '"></div>' +
+    '<div class="fg" style="margin-bottom:16px"><label class="fl">English</label><input class="fi" id="city-en" value="' + (c.name_en||'') + '"></div>' +
+    '<button class="tb-btn primary" style="width:100%;justify-content:center" onclick="updateCity(\'' + id + '\')">💾 حفظ</button>';
+  document.getElementById('small-modal').classList.add('open');
+}
+
+async function updateCity(id) {
+  await SB.from('cities').update({name_ar: document.getElementById('city-ar').value, name_en: document.getElementById('city-en').value}).eq('id', id);
+  closeModal('small-modal');
+  await loadCities();
+  toast('✅ تم التحديث');
+}
+
+function openAreaModal() {
+  if (!selectedCityId) return;
+  document.getElementById('small-modal-title').textContent = 'إضافة منطقة';
+  document.getElementById('small-modal-body').innerHTML =
+    '<div class="fg" style="margin-bottom:16px"><label class="fl">اسم المنطقة</label><input class="fi" id="area-name" placeholder="دبي مارينا"></div>' +
+    '<button class="tb-btn primary" style="width:100%;justify-content:center" onclick="saveArea()">💾 حفظ</button>';
+  document.getElementById('small-modal').classList.add('open');
+}
+
+async function saveArea() {
+  var name = document.getElementById('area-name').value.trim();
+  if (!name) return;
+  await SB.from('areas').insert({city_id: selectedCityId, name: name, is_active: true});
+  closeModal('small-modal');
+  selectCity(selectedCityId, document.getElementById('selected-city-name').textContent);
+  toast('✅ تمت الإضافة');
+}
+
+// ── NATIONALITIES ──
+async function loadNats() {
+  var r = await SB.from('nationalities').select('*').order('sort_order');
+  ALL_NATS = r.data || [];
+  renderNats();
+}
+
+function renderNats() {
+  var tb = document.getElementById('nats-tbody');
+  if (!tb) return;
+  tb.innerHTML = ALL_NATS.map(function(n) {
+    return '<tr>' +
+      '<td style="font-size:22px">' + (n.flag||'') + '</td>' +
+      '<td><strong>' + n.name_ar + '</strong></td>' +
+      '<td style="color:var(--muted)">' + (n.name_en||'—') + '</td>' +
+      '<td><label class="toggle"><input type="checkbox" ' + (n.is_active?'checked':'') + ' onchange="toggleNat(\'' + n.id + '\',this.checked)"><span class="toggle-slider"></span></label></td>' +
+      '<td><button class="act-btn" onclick="editNat(\'' + n.id + '\')">✏️</button></td>' +
+    '</tr>';
+  }).join('');
+}
+
+async function toggleNat(id, val) {
+  await SB.from('nationalities').update({is_active: val}).eq('id', id);
+}
+
+function openNatModal() {
+  document.getElementById('small-modal-title').textContent = 'إضافة جنسية';
+  document.getElementById('small-modal-body').innerHTML =
+    '<div class="fg" style="margin-bottom:12px"><label class="fl">الاسم عربي</label><input class="fi" id="nat-ar" placeholder="الفلبين"></div>' +
+    '<div class="fg" style="margin-bottom:12px"><label class="fl">English</label><input class="fi" id="nat-en" placeholder="Philippines"></div>' +
+    '<div class="fg" style="margin-bottom:16px"><label class="fl">العلم (emoji)</label><input class="fi" id="nat-flag" placeholder="🇵🇭" maxlength="4"></div>' +
+    '<button class="tb-btn primary" style="width:100%;justify-content:center" onclick="saveNat()">💾 حفظ</button>';
+  document.getElementById('small-modal').classList.add('open');
+}
+
+async function saveNat() {
+  var ar = document.getElementById('nat-ar').value.trim();
+  var en = document.getElementById('nat-en').value.trim();
+  var flag = document.getElementById('nat-flag').value.trim();
+  if (!ar) return;
+  await SB.from('nationalities').insert({name_ar: ar, name_en: en, flag: flag, is_active: true});
+  closeModal('small-modal');
+  await loadNats();
+  toast('✅ تمت الإضافة');
+}
+
+function editNat(id) {
+  var n = ALL_NATS.find(function(x){ return x.id === id; });
+  if (!n) return;
+  editingId = id;
+  document.getElementById('small-modal-title').textContent = 'تعديل الجنسية';
+  document.getElementById('small-modal-body').innerHTML =
+    '<div class="fg" style="margin-bottom:12px"><label class="fl">الاسم عربي</label><input class="fi" id="nat-ar" value="' + n.name_ar + '"></div>' +
+    '<div class="fg" style="margin-bottom:12px"><label class="fl">English</label><input class="fi" id="nat-en" value="' + (n.name_en||'') + '"></div>' +
+    '<div class="fg" style="margin-bottom:16px"><label class="fl">العلم</label><input class="fi" id="nat-flag" value="' + (n.flag||'') + '" maxlength="4"></div>' +
+    '<button class="tb-btn primary" style="width:100%;justify-content:center" onclick="updateNat(\'' + id + '\')">💾 حفظ</button>';
+  document.getElementById('small-modal').classList.add('open');
+}
+
+async function updateNat(id) {
+  await SB.from('nationalities').update({
+    name_ar: document.getElementById('nat-ar').value,
+    name_en: document.getElementById('nat-en').value,
+    flag:    document.getElementById('nat-flag').value
+  }).eq('id', id);
+  closeModal('small-modal');
+  await loadNats();
+  toast('✅ تم التحديث');
+}
+
+// ── HELPERS ──
+var PT_LABELS = {
+  fixed:'لكل مهمة', hourly:'ساعة', daily:'يوم', weekly:'أسبوع', monthly:'شهر',
+  pending:'قيد الانتظار', confirmed:'مؤكد', in_progress:'جاري', completed:'مكتمل', cancelled:'ملغي'
+};
+
+function statusBadge(s) {
+  var map = {pending:'badge-muted',confirmed:'badge-blue',in_progress:'badge-warn',completed:'badge-ok',cancelled:'badge-err'};
+  return '<span class="badge ' + (map[s]||'badge-muted') + '">' + (PT_LABELS[s]||s) + '</span>';
+}
+function workerStatusBadge(s) {
+  var map = {available:'badge-ok',busy:'badge-err',new:'badge-warn'};
+  var lbl = {available:'متاح',busy:'مشغول',new:'جديد'};
+  return '<span class="badge ' + (map[s]||'badge-muted') + '">' + (lbl[s]||s) + '</span>';
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+var toastTimer;
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2800);
+}
+</script>
+</body>
+</html>
