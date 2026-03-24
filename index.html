@@ -219,6 +219,20 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filt
 .spin{display:inline-block;width:36px;height:36px;border:3px solid rgba(31,166,122,.20);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* ───────── BOOKING ADDRESS ───────── */
+.baddr-list{display:flex;flex-direction:column;gap:8px;margin-bottom:4px;}
+.baddr-opt{background:var(--s2);border:2px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 14px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:12px;}
+.baddr-opt:hover{border-color:var(--gold);}
+.baddr-opt.on{border-color:var(--gold);background:rgba(31,166,122,.1);}
+.baddr-opt-ico{font-size:20px;flex-shrink:0;}
+.baddr-opt-info{flex:1;}
+.baddr-opt-label{font-weight:700;font-size:13px;}
+.baddr-opt-full{font-size:11px;color:var(--muted);margin-top:2px;}
+.baddr-new{background:none;border:2px dashed rgba(255,255,255,.15);border-radius:10px;padding:12px;width:100%;font-family:"Cairo",sans-serif;font-size:13px;color:var(--muted);cursor:pointer;transition:.2s;margin-top:4px;}
+.baddr-new:hover{border-color:var(--gold);color:var(--gold);}
+.baddr-new-form{display:none;margin-top:10px;padding:14px;background:var(--s2);border-radius:10px;border:1px solid rgba(31,166,122,.2);}
+.baddr-new-form.open{display:block;}
+
 /* ───────── ADDRESS CARD ───────── */
 .addr-card{background:var(--s1);border:1px solid rgba(255,255,255,.06);border-radius:var(--r);padding:16px 18px;display:flex;align-items:flex-start;gap:14px;transition:.2s;}
 .addr-card:hover{border-color:rgba(31,166,122,.25);}
@@ -445,7 +459,9 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
       </div>
       <div class="fgrp">
         <label class="flbl">العنوان</label>
-        <input class="finp" type="text" id="addr-inp" placeholder="المنطقة، المبنى، رقم الشقة...">
+        <div id="booking-addr-wrap">
+          <input class="finp" type="text" id="addr-inp" placeholder="المنطقة، المبنى، رقم الشقة...">
+        </div>
       </div>
       <div class="fgrp">
         <label class="flbl">ملاحظات</label>
@@ -833,6 +849,114 @@ async function toggleFav(wid, btn) {
 // ═══════════════════════════════════════════════════
 //  BOOKING MODAL
 // ═══════════════════════════════════════════════════
+async function loadBookingAddresses() {
+  var wrap = document.getElementById('booking-addr-wrap');
+  if (!wrap) return;
+
+  if (!USER) {
+    // not logged in — show manual input only
+    wrap.innerHTML =
+      '<input class="finp" id="addr-inp" placeholder="المنطقة، المبنى، رقم الشقة...">';
+    return;
+  }
+
+  // fetch saved addresses
+  var res = await SB.from('addresses').select('*').eq('user_id', USER.id).order('is_default', {ascending:false});
+  var addrs = (res.data || []);
+
+  var html = '';
+
+  if (addrs.length) {
+    html += '<div class="baddr-list">';
+    addrs.forEach(function(a, i) {
+      var isDefault = a.is_default;
+      html +=
+        '<div class="baddr-opt' + (isDefault ? ' on' : '') + '" data-id="' + a.id + '" data-full="' + (a.full_address||'').replace(/"/g,'&quot;') + '" data-city="' + (a.city||'') + '" data-area="' + (a.area||'') + '" onclick="selectBookingAddr(this)">' +
+          '<div class="baddr-opt-ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="' + (isDefault?'var(--gold)':'var(--muted)') + '" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>' +
+          '<div class="baddr-opt-info">' +
+            '<div class="baddr-opt-label">' + a.label + (isDefault ? ' <span style="color:var(--gold);font-size:10px">(افتراضي)</span>' : '') + '</div>' +
+            '<div class="baddr-opt-full">' + a.full_address + (a.area ? ' — ' + a.area : '') + (a.city ? '، ' + a.city : '') + '</div>' +
+          '</div>' +
+        '</div>';
+    });
+    html += '</div>';
+  }
+
+  // add new address button
+  html +=
+    '<button class="baddr-new" onclick="toggleNewAddrForm()">+ إضافة عنوان جديد</button>' +
+    '<div class="baddr-new-form" id="baddr-new-form">' +
+      '<div class="fgrp" style="margin-bottom:10px"><label class="flbl" style="font-size:11px">العنوان بالتفصيل</label>' +
+      '<input class="finp" id="addr-inp" placeholder="المبنى، الشارع، رقم الشقة..."></div>' +
+      '<div style="display:flex;gap:8px">' +
+        '<div class="fgrp" style="flex:1;margin-bottom:0"><label class="flbl" style="font-size:11px">المدينة</label>' +
+        '<select class="fsel" id="book-city" onchange="updateBookAreas()" style="font-size:13px">' +
+          '<option value="">اختر المدينة</option>' +
+          CITIES_DATA.map(function(c){ return '<option value="'+c.id+'">'+c.name+'</option>'; }).join('') +
+        '</select></div>' +
+        '<div class="fgrp" style="flex:1;margin-bottom:0"><label class="flbl" style="font-size:11px">المنطقة</label>' +
+        '<select class="fsel" id="book-area" style="font-size:13px"><option value="">اختر المنطقة</option></select></div>' +
+      '</div>' +
+    '</div>';
+
+  wrap.innerHTML = html;
+
+  // auto-select default address
+  var defAddr = addrs.find(function(a){ return a.is_default; }) || addrs[0];
+  if (defAddr) {
+    selectedBookingAddr = {
+      full: defAddr.full_address,
+      city: defAddr.city || '',
+      area: defAddr.area || ''
+    };
+  }
+}
+
+function selectBookingAddr(el) {
+  document.querySelectorAll('.baddr-opt').forEach(function(o){ o.classList.remove('on'); });
+  el.classList.add('on');
+  selectedBookingAddr = {
+    full: el.dataset.full,
+    city: el.dataset.city,
+    area: el.dataset.area
+  };
+  // hide new form if open
+  var form = document.getElementById('baddr-new-form');
+  if (form) form.classList.remove('open');
+}
+
+function toggleNewAddrForm() {
+  var form = document.getElementById('baddr-new-form');
+  if (form) form.classList.toggle('open');
+  // deselect saved addresses
+  document.querySelectorAll('.baddr-opt').forEach(function(o){ o.classList.remove('on'); });
+  selectedBookingAddr = null;
+}
+
+function updateBookAreas() {
+  var cityId = document.getElementById('book-city').value;
+  var sel = document.getElementById('book-area');
+  var filtered = AREAS_DATA.filter(function(a){ return a.city_id === cityId; });
+  sel.innerHTML = '<option value="">اختر المنطقة</option>' +
+    filtered.map(function(a){ return '<option value="'+a.id+'" data-name="'+a.name+'">'+a.name+'</option>'; }).join('');
+}
+
+function getBookingAddress() {
+  // from saved address
+  if (selectedBookingAddr) {
+    return selectedBookingAddr.full +
+      (selectedBookingAddr.area  ? ' — ' + selectedBookingAddr.area  : '') +
+      (selectedBookingAddr.city  ? '، '  + selectedBookingAddr.city  : '');
+  }
+  // from new address form
+  var full = (document.getElementById('addr-inp') || {}).value || '';
+  var cityId = (document.getElementById('book-city') || {}).value || '';
+  var areaEl = document.getElementById('book-area');
+  var areaName = areaEl && areaEl.selectedIndex > 0 ? areaEl.options[areaEl.selectedIndex].dataset.name : '';
+  var cityName = getCityName(cityId);
+  return full + (areaName ? ' — ' + areaName : '') + (cityName ? '، ' + cityName : '');
+}
+
 function openBooking(wid) {
   currentWorker = WORKERS.find(w => w.id === wid);
   if (!currentWorker) return;
@@ -860,6 +984,8 @@ function openBooking(wid) {
   if (avail.length) selectPt(avail[0]);
 
   document.getElementById('date-inp').valueAsDate = new Date();
+  selectedBookingAddr = null;
+  loadBookingAddresses();
   document.getElementById('book-overlay').classList.add('open');
 }
 
@@ -891,9 +1017,9 @@ async function confirmBooking() {
   if (!SB) { await tryAutoConnect(); if (!SB) { toast('تعذّر الاتصال بالخادم ⚠️'); return; } }
   const date  = document.getElementById('date-inp').value;
   const time  = document.getElementById('time-inp').value;
-  const addr  = document.getElementById('addr-inp').value.trim();
+  const addr  = getBookingAddress().trim();
   const notes = document.getElementById('notes-inp').value.trim();
-  if (!date || !addr) { toast('أدخل التاريخ والعنوان أولاً ⚠️'); return; }
+  if (!date || !addr) { toast('اختر العنوان أو أدخله أولاً ⚠️'); return; }
 
   const price = currentWorker['price_'+selectedPt];
   const qty   = selectedPt==='fixed' ? 1 : parseInt(document.getElementById('qty-inp').value||1);
