@@ -1341,33 +1341,30 @@ async function signOut() {
 var CITIES_DATA = [];
 var NATIONALITIES = [];
 
-// Original emoji icons - rendered via Twemoji for cross-platform consistency
-var CAT_EMOJI_MAP = {
-  maid:     { em: '🏠', tw: '1f3e0' },
-  cleaning: { em: '🧹', tw: '1f9f9' },
-  cooking:  { em: '🍳', tw: '1f373' },
-  baby:     { em: '👶', tw: '1f476' },
-  laundry:  { em: '👕', tw: '1f455' },
-  elderly:  { em: '👴', tw: '1f474' },
-  ironing:  { em: '🧺', tw: '1f9ba' },
-  garden:   { em: '🌿', tw: '1f33f' },
-  carwash:  { em: '🚗', tw: '1f697' },
-  pest:     { em: '🪲', tw: '1fab2' },
-  ac:       { em: '❄️', tw: '2744'  },
-  deep:     { em: '✨', tw: '2728'  },
-  default:  { em: '⭐', tw: '2b50'  }
-};
+// Dynamic emoji → Twemoji converter
+function emojiToTwUrl(emoji) {
+  // convert emoji string to twemoji SVG url
+  var codes = [];
+  for (var i = 0; i < emoji.length; ) {
+    var code = emoji.codePointAt(i);
+    if (code !== 0xFE0F) { // skip variation selector
+      codes.push(code.toString(16));
+    }
+    i += code > 0xFFFF ? 2 : 1;
+  }
+  var key = codes.join('-');
+  return 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/' + key + '.svg';
+}
 
 function getCatIcon(cat) {
-  var key = cat.icon_key || 'default';
-  var entry = CAT_EMOJI_MAP[key] || CAT_EMOJI_MAP.default;
-  var url = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/' + entry.tw + '.svg';
+  var emoji = cat.icon || '⭐';
+  var url = emojiToTwUrl(emoji);
   return '<img src="' + url + '" width="38" height="38" loading="lazy" style="display:block" class="tw-emoji">';
 }
+
 function getSmallIcon(cat) {
-  var key = cat.icon_key || 'default';
-  var entry = CAT_EMOJI_MAP[key] || CAT_EMOJI_MAP.default;
-  var url = 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/' + entry.tw + '.svg';
+  var emoji = cat.icon || '⭐';
+  var url = emojiToTwUrl(emoji);
   return '<img src="' + url + '" width="15" height="15" loading="lazy" style="vertical-align:middle;margin-left:3px" class="tw-emoji">';
 }  // [{id, name}, ...]
 var AREAS_DATA  = [];  // [{id, city_id, name}, ...]
