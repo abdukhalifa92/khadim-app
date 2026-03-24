@@ -168,7 +168,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filt
 .cdel{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.2);border-radius:7px;padding:6px 10px;cursor:pointer;color:var(--err);font-size:13px;}
 .cdel:hover{background:rgba(255,107,107,.22);}
 .empty{text-align:center;padding:70px 20px;}
-.empty .eico{font-size:56px;margin-bottom:14px;}
+.empty .eico{width:56px;height:56px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;}
 .empty p{color:var(--muted);font-size:15px;}
 
 /* ───────── ORDERS ───────── */
@@ -595,7 +595,7 @@ async function loadFavs() {
 
 async function loadOrders() {
   if (!SB || !USER) {
-    document.getElementById('orders-body').innerHTML = '<div class="empty"><div class="eico">🔑</div><p>سجّل دخولك لعرض طلباتك</p><button class="btn-p" style="margin-top:16px" onclick="go(\'auth\')">تسجيل الدخول</button></div>';
+    document.getElementById('orders-body').innerHTML = '<div class="empty"><div class="eico"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3"/></svg></div><p>سجّل دخولك لعرض طلباتك</p><button class="btn-p" style="margin-top:16px" onclick="go(\'auth\')">تسجيل الدخول</button></div>';
     return;
   }
   document.getElementById('orders-body').innerHTML = '<div class="loader"><div class="spin"></div></div>';
@@ -605,7 +605,7 @@ async function loadOrders() {
     .eq('user_id', USER.id)
     .order('created_at', { ascending: false });
   if (error || !data?.length) {
-    document.getElementById('orders-body').innerHTML = '<div class="empty"><div class="eico">📋</div><p>لا توجد طلبات بعد</p></div>';
+    document.getElementById('orders-body').innerHTML = '<div class="empty"><div class="eico"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></div><p>لا توجد طلبات بعد</p></div>';
     return;
   }
   document.getElementById('orders-body').innerHTML = `<div class="olist">${data.map(o => {
@@ -656,7 +656,7 @@ function renderServices() {
   const sg = document.getElementById('services-grid');
   sg.innerHTML = list.length
     ? list.map(w => workerCard(w)).join('')
-    : '<div class="empty"><div class="eico">🔍</div><p>لا توجد نتائج مطابقة</p></div>';
+    : '<div class="empty"><div class="eico"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div><p>لا توجد نتائج مطابقة</p></div>';
 }
 
 function workerCard(w) {
@@ -847,7 +847,7 @@ function closeModal() { document.getElementById('book-overlay').classList.remove
 function renderCart() {
   const el = document.getElementById('cart-body');
   if (!CART.length) {
-    el.innerHTML = `<div class="empty"><div class="eico">🛒</div><p>سلتك فارغة<br><small>ابحث عن خدمة وأضفها</small></p><button class="btn-p" style="margin-top:16px" onclick="go('services')">تصفح الخدمات</button></div>`;
+    el.innerHTML = `<div class="empty"><div class="eico"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div><p>سلتك فارغة<br><small>ابحث عن خدمة وأضفها</small></p><button class="btn-p" style="margin-top:16px" onclick="go('services')">تصفح الخدمات</button></div>`;
     return;
   }
   const total = CART.reduce((s,i)=>s+i.total,0);
@@ -940,14 +940,14 @@ async function doAuth() {
 async function loadFavoritesScreen() {
   var el = document.getElementById('favorites-body');
   if (!USER) {
-    el.innerHTML = '<div class="empty"><div class="eico">&#128273;</div><p>سجّل دخولك لعرض المفضلة</p><button class="btn-p" style="margin-top:16px" onclick="go(&quot;auth&quot;)">تسجيل الدخول</button></div>';
+    el.innerHTML = '<div class="empty"><div class="eico"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5 l3 3"/></svg></div><p>سجّل دخولك لعرض المفضلة</p><button class="btn-p" style="margin-top:16px" onclick="go(&quot;auth&quot;)">تسجيل الدخول</button></div>';
     return;
   }
   el.innerHTML = '<div class="loader"><div class="spin"></div></div>';
   var result = await SB.from('favorites').select('worker_id, workers(*)').eq('user_id', USER.id).order('created_at', { ascending: false });
   var data = result.data; var error = result.error;
   if (error || !data || !data.length) {
-    el.innerHTML = '<div class="empty"><div class="eico">&#129293;</div><p>لا توجد عمال في المفضلة بعد</p><button class="btn-p" style="margin-top:16px" onclick="go(&quot;services&quot;)">تصفح العمال</button></div>';
+    el.innerHTML = '<div class="empty"><div class="eico"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div><p>لا توجد عمال في المفضلة بعد</p><button class="btn-p" style="margin-top:16px" onclick="go(&quot;services&quot;)">تصفح العمال</button></div>';
     return;
   }
   var favWorkers = data.map(function(d) { return d.workers; }).filter(Boolean);
@@ -956,7 +956,7 @@ async function loadFavoritesScreen() {
 async function renderProfile() {
   var el = document.getElementById('profile-body');
   if (!USER) {
-    el.innerHTML = '<div class="empty"><div class="eico">&#128273;</div><p>سجّل دخولك لعرض ملفك</p><button class="btn-p" style="margin-top:16px" onclick="go(&quot;auth&quot;)">تسجيل الدخول</button></div>';
+    el.innerHTML = '<div class="empty"><div class="eico"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6M15.5 7.5 l3 3"/></svg></div><p>سجّل دخولك لعرض ملفك</p><button class="btn-p" style="margin-top:16px" onclick="go(&quot;auth&quot;)">تسجيل الدخول</button></div>';
     return;
   }
   var r1 = await SB.from('bookings').select('id', {count:'exact', head:true}).eq('user_id', USER.id);
