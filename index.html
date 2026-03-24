@@ -245,6 +245,33 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filt
   nav{padding:0 14px;}
 }
 </style>
+<style>
+html { touch-action: pan-x pan-y; }
+</style>
+<script>
+// Prevent pinch zoom
+document.addEventListener('touchmove', function(e) {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+
+// Prevent double-tap zoom
+var lastTap = 0;
+document.addEventListener('touchend', function(e) {
+  var now = Date.now();
+  if (now - lastTap < 300) e.preventDefault();
+  lastTap = now;
+}, { passive: false });
+
+// Prevent ctrl+scroll zoom (desktop)
+document.addEventListener('wheel', function(e) {
+  if (e.ctrlKey) e.preventDefault();
+}, { passive: false });
+
+// Prevent ctrl+plus/minus zoom (desktop)
+document.addEventListener('keydown', function(e) {
+  if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=')) e.preventDefault();
+});
+</script>
 </head>
 <body>
 
