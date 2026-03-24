@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>خدم - الخدمات المنزلية</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<!-- Supabase JS -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ───────── TOKENS ───────── */
+:root{
+  --gold:#C9A84C;--gold-light:#F0D080;--gold-dark:#8B6914;
+  --deep:#090D18;--s1:#111827;--s2:#1A2234;--s3:#243050;
+  --text:#F0EDE6;--muted:#8A93A8;--accent:#4ECDC4;
+  --ok:#51CF66;--err:#FF6B6B;--warn:#FFB347;
+  --r:14px;--sh:0 8px 32px rgba(0,0,0,.45);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Cairo',sans-serif;background:var(--deep);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 15% 15%,rgba(201,168,76,.07) 0%,transparent 55%),radial-gradient(circle at 85% 85%,rgba(78,205,196,.04) 0%,transparent 55%);pointer-events:none;z-index:0;}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-thumb{background:var(--gold-dark);border-radius:3px;}
+
+/* ───────── SETUP BANNER ───────── */
+#setup-banner{position:fixed;top:0;left:0;right:0;z-index:999;background:linear-gradient(90deg,#1a0a00,#3a1a00);border-bottom:1px solid rgba(255,179,71,.3);padding:10px 20px;display:flex;align-items:center;gap:12px;font-size:13px;}
+#setup-banner.hidden{display:none;}
+.setup-inp{background:rgba(255,255,255,.08);border:1px solid rgba(255,179,71,.3);border-radius:8px;padding:6px 12px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;width:280px;outline:none;}
+.setup-inp:focus{border-color:var(--warn);}
+.setup-btn{background:var(--warn);color:#000;font-family:'Cairo',sans-serif;font-weight:700;font-size:13px;padding:7px 18px;border:none;border-radius:8px;cursor:pointer;}
+.setup-label{color:var(--warn);font-weight:600;}
+
+/* ───────── NAV ───────── */
+nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filter:blur(18px);border-bottom:1px solid rgba(201,168,76,.12);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:66px;}
+.logo{font-size:26px;font-weight:900;background:linear-gradient(135deg,var(--gold-light),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;cursor:pointer;letter-spacing:-1px;}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.ic-btn{background:var(--s2);border:1px solid rgba(201,168,76,.18);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:17px;color:var(--gold);transition:.2s;position:relative;}
+.ic-btn:hover{background:var(--s3);}
+.badge{position:absolute;top:-6px;right:-6px;background:var(--err);color:#fff;font-size:10px;font-weight:700;width:17px;height:17px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+
+/* ───────── SCREENS ───────── */
+.screen{display:none;animation:up .35s ease;}
+.screen.on{display:block;}
+@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ───────── BOTTOM NAV ───────── */
+.bnav{position:fixed;bottom:0;left:0;right:0;background:rgba(17,24,39,.98);backdrop-filter:blur(18px);border-top:1px solid rgba(201,168,76,.1);display:flex;z-index:90;padding:6px 0 calc(6px + env(safe-area-inset-bottom));}
+.bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px;cursor:pointer;border:none;background:none;color:var(--muted);font-family:'Cairo',sans-serif;font-size:10px;transition:.2s;}
+.bnav-btn .ico{font-size:22px;}
+.bnav-btn.on{color:var(--gold);}
+
+/* ───────── MAIN WRAP ───────── */
+.wrap{padding:0 0 80px;}
+
+/* ───────── HERO ───────── */
+.hero{padding:56px 32px 40px;text-align:center;}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);border-radius:50px;padding:5px 14px;font-size:12px;color:var(--gold);margin-bottom:20px;}
+.hero h1{font-size:clamp(30px,5vw,60px);font-weight:900;line-height:1.1;margin-bottom:16px;letter-spacing:-1.5px;}
+.hero h1 em{font-style:normal;background:linear-gradient(135deg,var(--gold-light),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.hero p{font-size:16px;color:var(--muted);max-width:440px;margin:0 auto 32px;line-height:1.7;}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.btn-p{background:linear-gradient(135deg,var(--gold-light),var(--gold));color:var(--deep);font-family:'Cairo',sans-serif;font-weight:700;font-size:15px;padding:12px 28px;border:none;border-radius:11px;cursor:pointer;transition:.3s;}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(201,168,76,.4);}
+.btn-s{background:transparent;color:var(--text);font-family:'Cairo',sans-serif;font-weight:600;font-size:15px;padding:12px 28px;border:1px solid rgba(255,255,255,.18);border-radius:11px;cursor:pointer;transition:.3s;}
+.btn-s:hover{border-color:var(--gold);color:var(--gold);}
+
+/* ───────── STATS ───────── */
+.stats{display:flex;background:var(--s1);border:1px solid rgba(201,168,76,.1);border-radius:var(--r);margin:0 24px 48px;overflow:hidden;}
+.stat{flex:1;padding:20px;text-align:center;border-left:1px solid rgba(201,168,76,.08);}
+.stat:first-child{border-left:none;}
+.stat-n{font-size:24px;font-weight:900;color:var(--gold);}
+.stat-l{font-size:11px;color:var(--muted);margin-top:3px;}
+
+/* ───────── SECTION ───────── */
+.sec{padding:0 24px 36px;}
+.sec-ttl{font-size:26px;font-weight:800;margin-bottom:4px;}
+.sec-sub{color:var(--muted);font-size:13px;margin-bottom:24px;}
+
+/* ───────── CATEGORIES ───────── */
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;}
+.cat{background:var(--s1);border:1px solid rgba(201,168,76,.08);border-radius:var(--r);padding:22px 14px;text-align:center;cursor:pointer;transition:.3s;position:relative;overflow:hidden;}
+.cat::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(201,168,76,.06),transparent);opacity:0;transition:.3s;}
+.cat:hover{transform:translateY(-3px);border-color:var(--gold);box-shadow:0 8px 28px rgba(201,168,76,.12);}
+.cat:hover::before{opacity:1;}
+.cat .ci{font-size:36px;display:block;margin-bottom:10px;}
+.cat .cn{font-size:13px;font-weight:700;}
+.cat .cc{font-size:11px;color:var(--muted);margin-top:3px;}
+
+/* ───────── FILTER BAR ───────── */
+.fbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;align-items:center;}
+.search-box{background:var(--s1);border:1px solid rgba(255,255,255,.08);border-radius:50px;padding:9px 18px;color:var(--text);font-family:'Cairo',sans-serif;font-size:13px;outline:none;flex:1;min-width:180px;transition:.2s;}
+.search-box:focus{border-color:var(--gold);}
+.chip{background:var(--s1);border:1px solid rgba(255,255,255,.08);border-radius:50px;padding:7px 14px;font-size:12px;cursor:pointer;transition:.2s;font-family:'Cairo',sans-serif;color:var(--muted);}
+.chip:hover,.chip.on{background:rgba(201,168,76,.12);border-color:var(--gold);color:var(--gold);}
+.ptabs{display:flex;gap:6px;background:var(--s1);padding:5px;border-radius:10px;display:inline-flex;margin-bottom:24px;flex-wrap:wrap;}
+.ptab{padding:8px 16px;border-radius:7px;font-family:'Cairo',sans-serif;font-weight:600;font-size:12px;cursor:pointer;border:none;background:none;color:var(--muted);transition:.2s;}
+.ptab.on{background:var(--gold);color:var(--deep);}
+
+/* ───────── WORKER CARD ───────── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px;}
+.wcard{background:var(--s1);border:1px solid rgba(255,255,255,.05);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:.3s;}
+.wcard:hover{transform:translateY(-4px);border-color:rgba(201,168,76,.28);box-shadow:var(--sh);}
+.wimg{width:100%;height:170px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:60px;position:relative;}
+.wbadge{position:absolute;top:10px;right:10px;border-radius:50px;padding:3px 10px;font-size:10px;font-weight:700;}
+.wb-ok{background:var(--ok);color:#fff;}
+.wb-busy{background:var(--err);color:#fff;}
+.wb-new{background:var(--gold);color:var(--deep);}
+.wbody{padding:14px;}
+.wname{font-size:16px;font-weight:800;margin-bottom:2px;}
+.wrole{font-size:12px;color:var(--gold);margin-bottom:7px;}
+.wmeta{display:flex;gap:14px;font-size:11px;color:var(--muted);margin-bottom:10px;}
+.stars{color:#FFD700;font-size:12px;}
+.prices{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.ppill{background:var(--s2);border:1px solid rgba(201,168,76,.13);border-radius:50px;padding:3px 10px;font-size:10px;}
+.ppill strong{color:var(--gold);}
+.wacts{display:flex;gap:8px;}
+.btn-book{flex:1;background:linear-gradient(135deg,var(--gold-light),var(--gold));color:var(--deep);font-family:'Cairo',sans-serif;font-weight:700;font-size:12px;padding:9px;border:none;border-radius:9px;cursor:pointer;transition:.2s;}
+.btn-book:hover{transform:scale(1.02);box-shadow:0 3px 12px rgba(201,168,76,.3);}
+.btn-fav{background:var(--s2);border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:9px 13px;cursor:pointer;font-size:15px;transition:.2s;}
+.btn-fav:hover{background:rgba(255,107,107,.12);border-color:var(--err);}
+.btn-fav.on{background:rgba(255,107,107,.18);border-color:var(--err);}
+
+/* ───────── MODAL ───────── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:200;align-items:center;justify-content:center;padding:16px;}
+.overlay.open{display:flex;animation:up .2s ease;}
+.modal{background:var(--s1);border:1px solid rgba(201,168,76,.18);border-radius:18px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;}
+.mhdr{padding:22px 22px 0;display:flex;align-items:center;justify-content:space-between;}
+.mttl{font-size:20px;font-weight:800;}
+.mclose{background:var(--s2);border:none;color:var(--muted);width:34px;height:34px;border-radius:8px;cursor:pointer;font-size:17px;transition:.2s;}
+.mclose:hover{color:var(--text);}
+.mbody{padding:22px;}
+
+/* form */
+.fgrp{margin-bottom:18px;}
+.flbl{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:7px;text-transform:uppercase;letter-spacing:.5px;}
+.finp,.fsel,.ftxt{width:100%;background:var(--s2);border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:11px 14px;color:var(--text);font-family:'Cairo',sans-serif;font-size:14px;transition:.2s;outline:none;}
+.finp:focus,.fsel:focus,.ftxt:focus{border-color:var(--gold);}
+.fsel option{background:var(--s2);}
+.ftxt{resize:vertical;min-height:72px;}
+
+/* price grid */
+.pgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;}
+@media(max-width:480px){.pgrid{grid-template-columns:repeat(3,1fr);}}
+.popt{background:var(--s2);border:2px solid rgba(255,255,255,.07);border-radius:9px;padding:10px 6px;text-align:center;cursor:pointer;transition:.2s;}
+.popt:hover{border-color:rgba(201,168,76,.4);}
+.popt.on{border-color:var(--gold);background:rgba(201,168,76,.1);}
+.popt .pi{font-size:20px;margin-bottom:3px;}
+.popt .pl{font-size:10px;font-weight:700;}
+.popt .pp{font-size:12px;color:var(--gold);font-weight:800;margin-top:2px;}
+
+/* summary */
+.sbox{background:var(--s2);border:1px solid rgba(201,168,76,.13);border-radius:11px;padding:14px;margin-bottom:18px;}
+.srow{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px;}
+.srow:last-child{border:none;}
+.srow.tot{font-weight:900;font-size:15px;color:var(--gold);}
+.divider{border:none;border-top:1px solid rgba(255,255,255,.06);margin:16px 0;}
+
+/* ───────── CART ───────── */
+.cart-list{display:flex;flex-direction:column;gap:10px;}
+.citem{background:var(--s1);border:1px solid rgba(255,255,255,.05);border-radius:var(--r);padding:14px;display:flex;gap:14px;align-items:center;}
+.cico{font-size:32px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;background:var(--s2);border-radius:10px;flex-shrink:0;}
+.cinf{flex:1;}
+.cnm{font-weight:700;font-size:14px;margin-bottom:3px;}
+.cmeta{font-size:11px;color:var(--muted);}
+.cprice{font-size:17px;font-weight:900;color:var(--gold);}
+.cdel{background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.2);border-radius:7px;padding:6px 10px;cursor:pointer;color:var(--err);font-size:13px;}
+.cdel:hover{background:rgba(255,107,107,.22);}
+.empty{text-align:center;padding:70px 20px;}
+.empty .eico{font-size:56px;margin-bottom:14px;}
+.empty p{color:var(--muted);font-size:15px;}
+
+/* ───────── ORDERS ───────── */
+.olist{display:flex;flex-direction:column;gap:10px;}
+.ocard{background:var(--s1);border:1px solid rgba(255,255,255,.05);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:14px;}
+.oico{font-size:28px;}
+.oinf{flex:1;}
+.onm{font-weight:700;margin-bottom:3px;}
+.odt{font-size:11px;color:var(--muted);}
+.ostatus{padding:4px 11px;border-radius:50px;font-size:10px;font-weight:700;}
+.s-done{background:rgba(81,207,102,.15);color:var(--ok);}
+.s-prog{background:rgba(201,168,76,.15);color:var(--gold);}
+.s-pend{background:rgba(138,147,168,.15);color:var(--muted);}
+.s-canc{background:rgba(255,107,107,.15);color:var(--err);}
+
+/* ───────── PROFILE ───────── */
+.pcard{background:var(--s1);border:1px solid rgba(201,168,76,.09);border-radius:18px;padding:28px;text-align:center;margin-bottom:22px;}
+.pav{font-size:64px;margin-bottom:10px;}
+.pnm{font-size:22px;font-weight:800;}
+.pem{color:var(--muted);font-size:13px;margin-bottom:14px;}
+.pstats{display:flex;justify-content:center;gap:28px;}
+.pst-v{font-size:20px;font-weight:900;color:var(--gold);}
+.pst-l{font-size:10px;color:var(--muted);}
+.mlist{display:flex;flex-direction:column;gap:7px;}
+.mitem{background:var(--s1);border:1px solid rgba(255,255,255,.05);border-radius:11px;padding:14px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:.2s;}
+.mitem:hover{border-color:rgba(201,168,76,.28);background:var(--s2);}
+.mico{font-size:20px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:var(--s2);border-radius:9px;}
+.mtxt{flex:1;}
+.mttl{font-weight:600;font-size:14px;}
+.msub{font-size:11px;color:var(--muted);}
+.marrow{color:var(--muted);}
+
+/* ───────── AUTH ───────── */
+.auth-wrap{max-width:400px;margin:60px auto;padding:0 24px;}
+.auth-card{background:var(--s1);border:1px solid rgba(201,168,76,.15);border-radius:18px;padding:32px;}
+.auth-ttl{font-size:22px;font-weight:800;margin-bottom:6px;}
+.auth-sub{color:var(--muted);font-size:13px;margin-bottom:28px;}
+.auth-tabs{display:flex;background:var(--s2);border-radius:9px;padding:4px;margin-bottom:24px;}
+.auth-tab{flex:1;padding:9px;border:none;background:none;font-family:'Cairo',sans-serif;font-weight:600;font-size:13px;cursor:pointer;border-radius:6px;color:var(--muted);transition:.2s;}
+.auth-tab.on{background:var(--gold);color:var(--deep);}
+
+/* ───────── SUCCESS ───────── */
+.success-overlay{display:none;position:fixed;inset:0;z-index:400;background:var(--deep);align-items:center;justify-content:center;flex-direction:column;text-align:center;}
+.success-overlay.show{display:flex;animation:up .3s ease;}
+.sico-w{width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,var(--ok),#2ecc71);display:flex;align-items:center;justify-content:center;font-size:44px;margin-bottom:22px;animation:pop .5s cubic-bezier(.175,.885,.32,1.275);}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+
+/* ───────── TOAST ───────── */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid rgba(201,168,76,.25);border-radius:50px;padding:10px 22px;font-size:13px;font-weight:600;z-index:500;opacity:0;transition:.3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
+
+/* ───────── LOADER ───────── */
+.loader{text-align:center;padding:48px;color:var(--muted);}
+.spin{display:inline-block;width:36px;height:36px;border:3px solid rgba(201,168,76,.2);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ───────── RESPONSIVE ───────── */
+@media(max-width:600px){
+  .hero{padding:32px 16px 24px;}
+  .stats{margin:0 16px 32px;}
+  .sec{padding:0 16px 28px;}
+  .cats{grid-template-columns:repeat(3,1fr);}
+  .grid{grid-template-columns:1fr;}
+  nav{padding:0 14px;}
+}
+</style>
+</head>
+<body>
+
+<!-- SETUP BANNER -->
+<div id="setup-banner">
+  <span class="setup-label">⚙️ إعداد Supabase:</span>
+  <input class="setup-inp" id="sb-url" placeholder="Project URL  (https://xxx.supabase.co)" />
+  <input class="setup-inp" id="sb-key" placeholder="Anon Key" style="margin-right:8px"/>
+  <button class="setup-btn" onclick="initSupabase()">اتصل الآن</button>
+  <span id="conn-status" style="font-size:12px;color:var(--muted);margin-right:8px"></span>
+</div>
+
+<!-- NAV -->
+<nav id="main-nav" style="margin-top:52px">
+  <div class="logo" onclick="go('home')">خـدم</div>
+  <div class="nav-right">
+    <button class="ic-btn" onclick="go('cart')">🛒<span class="badge" id="cart-badge" style="display:none">0</span></button>
+    <button class="ic-btn" id="auth-btn" onclick="handleAuthBtn()">👤</button>
+  </div>
+</nav>
+
+<div class="wrap" id="app-wrap">
+
+<!-- ── HOME ── -->
+<div class="screen on" id="sc-home">
+  <div class="hero">
+    <div class="hero-badge">⭐ الأول في الإمارات للخدمات المنزلية</div>
+    <h1>خدمات منزلية<br><em>احترافية بضغطة زر</em></h1>
+    <p>خادمات وعاملات منزل ومنظفون محترفون بأسعار شفافة وثابتة أو بالساعة</p>
+    <div class="hero-btns">
+      <button class="btn-p" onclick="go('services')">🔍 ابحث عن خدمة</button>
+      <button class="btn-s" onclick="go('orders')">📋 طلباتي</button>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-n" id="stat-workers">--</div><div class="stat-l">عامل متاح</div></div>
+    <div class="stat"><div class="stat-n">٩٨٪</div><div class="stat-l">رضا العملاء</div></div>
+    <div class="stat"><div class="stat-n">٢٤/٧</div><div class="stat-l">خدمة متواصلة</div></div>
+    <div class="stat"><div class="stat-n" id="stat-bookings">--</div><div class="stat-l">حجز مكتمل</div></div>
+  </div>
+  <div class="sec">
+    <div class="sec-ttl">تصفح الخدمات</div>
+    <div class="sec-sub">اختر الخدمة التي تناسب احتياجك</div>
+    <div class="cats" id="cats-home"></div>
+  </div>
+  <div class="sec">
+    <div class="sec-ttl">⭐ أبرز العاملين</div>
+    <div class="sec-sub">الأكثر طلباً هذا الأسبوع</div>
+    <div class="grid" id="featured-grid"></div>
+  </div>
+</div>
+
+<!-- ── SERVICES ── -->
+<div class="screen" id="sc-services">
+  <div class="sec" style="padding-top:24px">
+    <div class="sec-ttl">🔍 استكشف الخدمات</div>
+    <div class="sec-sub">تصفية حسب النوع والسعر والتقييم</div>
+    <div class="fbar">
+      <input class="search-box" id="search-inp" placeholder="ابحث عن خدمة أو اسم..." oninput="applyFilters()">
+      <button class="chip on" data-cat="all" onclick="setCat(this,'all')">الكل</button>
+      <button class="chip" data-cat="خادمة منزلية" onclick="setCat(this,'خادمة منزلية')">🏠 خادمة</button>
+      <button class="chip" data-cat="تنظيف عام" onclick="setCat(this,'تنظيف عام')">🧹 تنظيف</button>
+      <button class="chip" data-cat="طباخ / طباخة" onclick="setCat(this,'طباخ / طباخة')">👨‍🍳 طبخ</button>
+      <button class="chip" data-cat="جليسة أطفال" onclick="setCat(this,'جليسة أطفال')">👶 جليسة</button>
+    </div>
+    <div class="ptabs">
+      <button class="ptab on" onclick="setPt(this,'all')">كل الأسعار</button>
+      <button class="ptab" onclick="setPt(this,'fixed')">💎 ثابت</button>
+      <button class="ptab" onclick="setPt(this,'hourly')">⏱️ ساعة</button>
+      <button class="ptab" onclick="setPt(this,'daily')">☀️ يوم</button>
+      <button class="ptab" onclick="setPt(this,'weekly')">📅 أسبوع</button>
+      <button class="ptab" onclick="setPt(this,'monthly')">🗓️ شهر</button>
+    </div>
+    <div class="grid" id="services-grid"></div>
+  </div>
+</div>
+
+<!-- ── CART ── -->
+<div class="screen" id="sc-cart">
+  <div class="sec" style="padding-top:24px">
+    <div class="sec-ttl">🛒 سلة الحجوزات</div>
+    <div id="cart-body"></div>
+  </div>
+</div>
+
+<!-- ── ORDERS ── -->
+<div class="screen" id="sc-orders">
+  <div class="sec" style="padding-top:24px">
+    <div class="sec-ttl">📋 طلباتي</div>
+    <div class="sec-sub">سجل حجوزاتك السابقة والحالية</div>
+    <div id="orders-body"></div>
+  </div>
+</div>
+
+<!-- ── PROFILE ── -->
+<div class="screen" id="sc-profile">
+  <div class="sec" style="padding-top:24px">
+    <div id="profile-body"></div>
+  </div>
+</div>
+
+<!-- ── AUTH ── -->
+<div class="screen" id="sc-auth">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-ttl">مرحباً بك في خدم</div>
+      <div class="auth-sub">سجّل دخولك للحجز وتتبع طلباتك</div>
+      <div class="auth-tabs">
+        <button class="auth-tab on" id="tab-login" onclick="authTab('login')">تسجيل الدخول</button>
+        <button class="auth-tab" id="tab-signup" onclick="authTab('signup')">حساب جديد</button>
+      </div>
+      <div id="auth-form-wrap"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- end wrap -->
+
+<!-- BOTTOM NAV -->
+<div class="bnav">
+  <button class="bnav-btn on" id="bn-home" onclick="go('home')"><span class="ico">🏠</span>الرئيسية</button>
+  <button class="bnav-btn" id="bn-services" onclick="go('services')"><span class="ico">🔍</span>الخدمات</button>
+  <button class="bnav-btn" id="bn-cart" onclick="go('cart')"><span class="ico">🛒</span>السلة</button>
+  <button class="bnav-btn" id="bn-orders" onclick="go('orders')"><span class="ico">📋</span>طلباتي</button>
+  <button class="bnav-btn" id="bn-profile" onclick="go('profile')"><span class="ico">👤</span>حسابي</button>
+</div>
+
+<!-- BOOKING MODAL -->
+<div class="overlay" id="book-overlay">
+  <div class="modal">
+    <div class="mhdr">
+      <div class="mttl">📅 حجز الخدمة</div>
+      <button class="mclose" onclick="closeModal()">✕</button>
+    </div>
+    <div class="mbody">
+      <div id="modal-worker"></div>
+      <hr class="divider">
+      <div class="fgrp">
+        <label class="flbl">نوع السعر</label>
+        <div class="pgrid" id="modal-prices"></div>
+      </div>
+      <div class="fgrp" id="qty-row" style="display:none">
+        <label class="flbl">الكمية (<span id="qty-unit-lbl"></span>)</label>
+        <input class="finp" type="number" id="qty-inp" min="1" max="30" value="1" oninput="calcSummary()">
+      </div>
+      <div class="fgrp">
+        <label class="flbl">تاريخ الخدمة</label>
+        <input class="finp" type="date" id="date-inp">
+      </div>
+      <div class="fgrp">
+        <label class="flbl">وقت البدء</label>
+        <input class="finp" type="time" id="time-inp" value="09:00">
+      </div>
+      <div class="fgrp">
+        <label class="flbl">العنوان</label>
+        <input class="finp" type="text" id="addr-inp" placeholder="المنطقة، المبنى، رقم الشقة...">
+      </div>
+      <div class="fgrp">
+        <label class="flbl">ملاحظات</label>
+        <textarea class="ftxt" id="notes-inp" placeholder="أي تعليمات خاصة..."></textarea>
+      </div>
+      <div class="sbox" id="modal-summary"></div>
+      <button class="btn-p" style="width:100%;font-size:15px;padding:14px" onclick="confirmBooking()">✅ تأكيد وإضافة للسلة</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div class="success-overlay" id="success-overlay">
+  <div class="sico-w">✓</div>
+  <div style="font-size:26px;font-weight:800;margin-bottom:8px">تم الحجز بنجاح!</div>
+  <div style="color:var(--muted);margin-bottom:28px">سيتواصل معك العامل خلال ٣٠ دقيقة</div>
+  <button class="btn-p" onclick="hideSuccess()">العودة للرئيسية</button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+let SB = null;          // supabase client
+let USER = null;        // auth user
+let PROFILE = null;     // profile row
+let WORKERS = [];       // all workers from db
+let CATS = [];          // categories from db
+let FAVS = new Set();   // favorite worker ids
+let CART = [];          // local cart (saved to localStorage)
+let activeCat = 'all';
+let activePt = 'all';
+let currentWorker = null;
+let selectedPt = null;
+
+const PT_LABEL = {fixed:'ثابت',hourly:'ساعة',daily:'يوم',weekly:'أسبوع',monthly:'شهر'};
+const PT_ICON  = {fixed:'💎',hourly:'⏱️',daily:'☀️',weekly:'📅',monthly:'🗓️'};
+const PT_UNIT  = {hourly:'ساعات',daily:'أيام',weekly:'أسابيع',monthly:'أشهر'};
+const STATUS_MAP = {
+  available:{cls:'wb-ok',txt:'متاح'},
+  busy:{cls:'wb-busy',txt:'مشغول'},
+  new:{cls:'wb-new',txt:'جديد'}
+};
+const ORDER_STATUS = {
+  pending:{cls:'s-pend',txt:'قيد الانتظار'},
+  confirmed:{cls:'s-prog',txt:'مؤكد'},
+  in_progress:{cls:'s-prog',txt:'جاري التنفيذ'},
+  completed:{cls:'s-done',txt:'مكتمل'},
+  cancelled:{cls:'s-canc',txt:'ملغي'}
+};
+
+// ═══════════════════════════════════════════════════
+//  SUPABASE INIT
+// ═══════════════════════════════════════════════════
+async function initSupabase() {
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  if (!url || !key) { toast('أدخل الـ URL والـ Key أولاً ⚠️'); return; }
+  try {
+    SB = supabase.createClient(url, key);
+    // test connection
+    const { error } = await SB.from('categories').select('id').limit(1);
+    if (error) throw error;
+    document.getElementById('conn-status').textContent = '✅ متصل بنجاح!';
+    document.getElementById('conn-status').style.color = 'var(--ok)';
+    // save creds
+    localStorage.setItem('sb_url', url);
+    localStorage.setItem('sb_key', key);
+    document.getElementById('setup-banner').classList.add('hidden');
+    document.getElementById('main-nav').style.marginTop = '0';
+    await bootApp();
+  } catch(e) {
+    document.getElementById('conn-status').textContent = '❌ فشل الاتصال: ' + e.message;
+    document.getElementById('conn-status').style.color = 'var(--err)';
+  }
+}
+
+async function tryAutoConnect() {
+  const url = localStorage.getItem('sb_url');
+  const key = localStorage.getItem('sb_key');
+  if (!url || !key) return false;
+  document.getElementById('sb-url').value = url;
+  document.getElementById('sb-key').value = key;
+  SB = supabase.createClient(url, key);
+  try {
+    const { error } = await SB.from('categories').select('id').limit(1);
+    if (error) throw error;
+    document.getElementById('setup-banner').classList.add('hidden');
+    document.getElementById('main-nav').style.marginTop = '0';
+    return true;
+  } catch { SB = null; return false; }
+}
+
+async function bootApp() {
+  // auth state
+  const { data: { session } } = await SB.auth.getSession();
+  if (session) {
+    USER = session.user;
+    await loadProfile();
+  }
+  SB.auth.onAuthStateChange(async (_ev, sess) => {
+    USER = sess?.user || null;
+    if (USER) await loadProfile(); else PROFILE = null;
+    updateAuthBtn();
+  });
+  updateAuthBtn();
+  CART = JSON.parse(localStorage.getItem('khadim_cart') || '[]');
+  updateCartBadge();
+  await Promise.all([loadCategories(), loadWorkers(), loadFavs()]);
+  renderHome();
+  renderServices();
+}
+
+// ═══════════════════════════════════════════════════
+//  PROFILE / AUTH
+// ═══════════════════════════════════════════════════
+async function loadProfile() {
+  if (!SB || !USER) return;
+  const { data } = await SB.from('profiles').select('*').eq('id', USER.id).single();
+  PROFILE = data;
+}
+
+function updateAuthBtn() {
+  const btn = document.getElementById('auth-btn');
+  btn.textContent = USER ? (PROFILE?.avatar_emoji || '👤') : '🔑';
+}
+
+function handleAuthBtn() {
+  if (USER) go('profile'); else go('auth');
+}
+
+// ═══════════════════════════════════════════════════
+//  DATA LOADING
+// ═══════════════════════════════════════════════════
+async function loadCategories() {
+  if (!SB) return;
+  const { data, error } = await SB.from('categories').select('*').order('name_ar');
+  if (!error) CATS = data;
+}
+
+async function loadWorkers() {
+  if (!SB) return;
+  const { data, error } = await SB
+    .from('workers')
+    .select('*, categories(name_ar,icon)')
+    .eq('is_active', true)
+    .order('rating', { ascending: false });
+  if (!error) {
+    WORKERS = data;
+    document.getElementById('stat-workers').textContent = WORKERS.filter(w=>w.status==='available').length + '+';
+  }
+}
+
+async function loadBookingsCount() {
+  if (!SB) return;
+  const { count } = await SB.from('bookings').select('id', {count:'exact',head:true}).eq('status','completed');
+  if (count != null) document.getElementById('stat-bookings').textContent = count + '+';
+}
+
+async function loadFavs() {
+  if (!SB || !USER) return;
+  const { data } = await SB.from('favorites').select('worker_id').eq('user_id', USER.id);
+  FAVS = new Set((data||[]).map(f => f.worker_id));
+}
+
+async function loadOrders() {
+  if (!SB || !USER) {
+    document.getElementById('orders-body').innerHTML = '<div class="empty"><div class="eico">🔑</div><p>سجّل دخولك لعرض طلباتك</p><button class="btn-p" style="margin-top:16px" onclick="go(\'auth\')">تسجيل الدخول</button></div>';
+    return;
+  }
+  document.getElementById('orders-body').innerHTML = '<div class="loader"><div class="spin"></div></div>';
+  const { data, error } = await SB
+    .from('bookings')
+    .select('*, workers(name,icon,role_ar)')
+    .eq('user_id', USER.id)
+    .order('created_at', { ascending: false });
+  if (error || !data?.length) {
+    document.getElementById('orders-body').innerHTML = '<div class="empty"><div class="eico">📋</div><p>لا توجد طلبات بعد</p></div>';
+    return;
+  }
+  document.getElementById('orders-body').innerHTML = `<div class="olist">${data.map(o => {
+    const st = ORDER_STATUS[o.status] || {cls:'s-pend',txt:o.status};
+    return `<div class="ocard">
+      <div class="oico">${o.workers?.icon || '🏠'}</div>
+      <div class="oinf">
+        <div class="onm">${o.workers?.name || '-'} · ${o.workers?.role_ar || ''}</div>
+        <div class="odt">📅 ${new Date(o.service_date).toLocaleDateString('ar-EG')} · ${PT_ICON[o.pricing_type]} ${PT_LABEL[o.pricing_type]} × ${o.quantity} · <strong style="color:var(--gold)">${o.total} د.إ</strong></div>
+      </div>
+      <span class="ostatus ${st.cls}">${st.txt}</span>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER HOME
+// ═══════════════════════════════════════════════════
+function renderHome() {
+  // categories
+  const cg = document.getElementById('cats-home');
+  if (!CATS.length) { cg.innerHTML = '<div class="loader"><div class="spin"></div></div>'; return; }
+  cg.innerHTML = CATS.map(c => {
+    const cnt = WORKERS.filter(w => w.categories?.name_ar === c.name_ar).length;
+    return `<div class="cat" onclick="filterCat('${c.name_ar}')">
+      <span class="ci">${c.icon}</span>
+      <div class="cn">${c.name_ar}</div>
+      <div class="cc">${cnt} عامل</div>
+    </div>`;
+  }).join('');
+  // featured (top 4)
+  const fg = document.getElementById('featured-grid');
+  fg.innerHTML = WORKERS.slice(0,4).map(w => workerCard(w)).join('');
+  loadBookingsCount();
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER SERVICES
+// ═══════════════════════════════════════════════════
+function renderServices() {
+  const search = (document.getElementById('search-inp')?.value||'').toLowerCase();
+  let list = WORKERS.filter(w => {
+    const matchCat = activeCat==='all' || w.categories?.name_ar === activeCat;
+    const matchPt  = activePt==='all' || (w['price_'+activePt] !== null && w['price_'+activePt] !== undefined);
+    const matchSrch= !search || w.name.toLowerCase().includes(search) || w.role_ar.toLowerCase().includes(search);
+    return matchCat && matchPt && matchSrch;
+  });
+  const sg = document.getElementById('services-grid');
+  sg.innerHTML = list.length
+    ? list.map(w => workerCard(w)).join('')
+    : '<div class="empty"><div class="eico">🔍</div><p>لا توجد نتائج مطابقة</p></div>';
+}
+
+function workerCard(w) {
+  const st = STATUS_MAP[w.status] || {cls:'wb-ok',txt:w.status};
+  const pts = ['fixed','hourly','daily','weekly','monthly']
+    .filter(k => w['price_'+k] != null)
+    .map(k => `<span class="ppill">${PT_ICON[k]} <strong>${w['price_'+k]} د.إ</strong>/${PT_LABEL[k]}</span>`).join('');
+  const isFav = FAVS.has(w.id);
+  return `<div class="wcard">
+    <div class="wimg">${w.icon||'👤'}<span class="wbadge ${st.cls}">${st.txt}</span></div>
+    <div class="wbody">
+      <div class="wname">${w.name}</div>
+      <div class="wrole">${w.role_ar} · ${w.nationality||''}</div>
+      <div class="wmeta">
+        <span><span class="stars">★</span> ${w.rating} (${w.reviews_count})</span>
+        <span>⏳ ${w.experience_years} سنوات</span>
+      </div>
+      <div class="prices">${pts}</div>
+      <div class="wacts">
+        <button class="btn-book" onclick="openBooking('${w.id}')">📅 احجز الآن</button>
+        <button class="btn-fav ${isFav?'on':''}" id="fav-${w.id}" onclick="toggleFav('${w.id}',this)">${isFav?'❤️':'🤍'}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════
+//  FILTERS
+// ═══════════════════════════════════════════════════
+function setCat(el, cat) {
+  activeCat = cat;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.cat===cat));
+  applyFilters();
+}
+function setPt(el, pt) {
+  activePt = pt;
+  document.querySelectorAll('.ptab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  applyFilters();
+}
+function applyFilters() { renderServices(); }
+function filterCat(name) {
+  activeCat = name;
+  go('services');
+  setTimeout(() => {
+    document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.cat===name));
+    renderServices();
+  }, 50);
+}
+
+// ═══════════════════════════════════════════════════
+//  FAVORITES
+// ═══════════════════════════════════════════════════
+async function toggleFav(wid, btn) {
+  if (!USER) { toast('سجّل دخولك أولاً 🔑'); go('auth'); return; }
+  if (FAVS.has(wid)) {
+    await SB.from('favorites').delete().eq('user_id',USER.id).eq('worker_id',wid);
+    FAVS.delete(wid); btn.textContent='🤍'; btn.classList.remove('on');
+    toast('تم الحذف من المفضلة');
+  } else {
+    await SB.from('favorites').insert({user_id:USER.id,worker_id:wid});
+    FAVS.add(wid); btn.textContent='❤️'; btn.classList.add('on');
+    toast('تم الإضافة للمفضلة ❤️');
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  BOOKING MODAL
+// ═══════════════════════════════════════════════════
+function openBooking(wid) {
+  currentWorker = WORKERS.find(w => w.id === wid);
+  if (!currentWorker) return;
+  selectedPt = null;
+
+  document.getElementById('modal-worker').innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="font-size:44px;width:64px;height:64px;background:var(--s2);border-radius:12px;display:flex;align-items:center;justify-content:center">${currentWorker.icon}</div>
+      <div>
+        <div style="font-size:17px;font-weight:800">${currentWorker.name}</div>
+        <div style="color:var(--gold);font-size:12px;margin-bottom:3px">${currentWorker.role_ar}</div>
+        <div style="font-size:11px;color:var(--muted)">⭐ ${currentWorker.rating} · ${currentWorker.nationality}</div>
+      </div>
+    </div>`;
+
+  // price options
+  const avail = ['fixed','hourly','daily','weekly','monthly'].filter(k => currentWorker['price_'+k] != null);
+  document.getElementById('modal-prices').innerHTML = avail.map(k => `
+    <div class="popt" data-pt="${k}" onclick="selectPt('${k}')">
+      <div class="pi">${PT_ICON[k]}</div>
+      <div class="pl">${PT_LABEL[k]}</div>
+      <div class="pp">${currentWorker['price_'+k]} د.إ</div>
+    </div>`).join('');
+
+  if (avail.length) selectPt(avail[0]);
+
+  document.getElementById('date-inp').valueAsDate = new Date();
+  document.getElementById('book-overlay').classList.add('open');
+}
+
+function selectPt(pt) {
+  selectedPt = pt;
+  document.querySelectorAll('.popt').forEach(o => o.classList.toggle('on', o.dataset.pt===pt));
+  const qr = document.getElementById('qty-row');
+  if (pt==='fixed') { qr.style.display='none'; }
+  else { qr.style.display='block'; document.getElementById('qty-unit-lbl').textContent = PT_UNIT[pt]; document.getElementById('qty-inp').value=1; }
+  calcSummary();
+}
+
+function calcSummary() {
+  if (!selectedPt || !currentWorker) return;
+  const price = currentWorker['price_'+selectedPt];
+  const qty   = selectedPt==='fixed' ? 1 : parseInt(document.getElementById('qty-inp').value||1);
+  const sub   = price * qty;
+  const vat   = Math.round(sub * 0.05);
+  const total = sub + vat;
+  document.getElementById('modal-summary').innerHTML = `
+    <div class="srow"><span>الخدمة</span><span>${currentWorker.role_ar}</span></div>
+    <div class="srow"><span>نوع التسعير</span><span>${PT_ICON[selectedPt]} ${PT_LABEL[selectedPt]} × ${qty}</span></div>
+    <div class="srow"><span>السعر الأساسي</span><span>${sub} د.إ</span></div>
+    <div class="srow"><span>ضريبة القيمة المضافة ٥٪</span><span>${vat} د.إ</span></div>
+    <div class="srow tot"><span>الإجمالي</span><span>${total} د.إ</span></div>`;
+}
+
+async function confirmBooking() {
+  if (!SB) { toast('اتصل بـ Supabase أولاً'); return; }
+  const date  = document.getElementById('date-inp').value;
+  const time  = document.getElementById('time-inp').value;
+  const addr  = document.getElementById('addr-inp').value.trim();
+  const notes = document.getElementById('notes-inp').value.trim();
+  if (!date || !addr) { toast('أدخل التاريخ والعنوان أولاً ⚠️'); return; }
+
+  const price = currentWorker['price_'+selectedPt];
+  const qty   = selectedPt==='fixed' ? 1 : parseInt(document.getElementById('qty-inp').value||1);
+  const sub   = price * qty;
+  const vat   = Math.round(sub * 0.05);
+  const total = sub + vat;
+
+  const bookingData = {
+    worker_id:     currentWorker.id,
+    pricing_type:  selectedPt,
+    quantity:      qty,
+    unit_price:    price,
+    subtotal:      sub,
+    vat:           vat,
+    total:         total,
+    address:       addr,
+    service_date:  date,
+    service_time:  time,
+    notes:         notes,
+    status:        'pending',
+    payment_status:'unpaid'
+  };
+
+  if (USER) {
+    // save to Supabase
+    bookingData.user_id = USER.id;
+    const { error } = await SB.from('bookings').insert(bookingData);
+    if (error) { toast('❌ خطأ: ' + error.message); return; }
+  } else {
+    // save to local cart
+    CART.push({ id: Date.now(), ...bookingData, worker: currentWorker });
+    localStorage.setItem('khadim_cart', JSON.stringify(CART));
+    updateCartBadge();
+  }
+  closeModal();
+  renderCart();
+  showSuccess();
+}
+
+function closeModal() { document.getElementById('book-overlay').classList.remove('open'); }
+
+// ═══════════════════════════════════════════════════
+//  CART
+// ═══════════════════════════════════════════════════
+function renderCart() {
+  const el = document.getElementById('cart-body');
+  if (!CART.length) {
+    el.innerHTML = `<div class="empty"><div class="eico">🛒</div><p>سلتك فارغة<br><small>ابحث عن خدمة وأضفها</small></p><button class="btn-p" style="margin-top:16px" onclick="go('services')">تصفح الخدمات</button></div>`;
+    return;
+  }
+  const total = CART.reduce((s,i)=>s+i.total,0);
+  el.innerHTML = `
+    <div class="cart-list">${CART.map(item=>`
+      <div class="citem">
+        <div class="cico">${item.worker?.icon||'🏠'}</div>
+        <div class="cinf">
+          <div class="cnm">${item.worker?.name||'-'}</div>
+          <div class="cmeta">${item.worker?.role_ar||''} · ${PT_ICON[item.pricing_type]} ${PT_LABEL[item.pricing_type]} × ${item.quantity} · 📅 ${item.service_date}</div>
+        </div>
+        <div class="cprice">${item.total} د.إ</div>
+        <button class="cdel" onclick="removeCart(${item.id})">🗑</button>
+      </div>`).join('')}
+    </div>
+    <hr class="divider">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span style="font-size:17px;font-weight:800">الإجمالي</span>
+      <span style="font-size:22px;font-weight:900;color:var(--gold)">${total} د.إ</span>
+    </div>
+    <button class="btn-p" style="width:100%;font-size:15px;padding:14px" onclick="checkout()">💳 إتمام الدفع</button>`;
+}
+
+function removeCart(id) {
+  CART = CART.filter(i => i.id !== id);
+  localStorage.setItem('khadim_cart', JSON.stringify(CART));
+  updateCartBadge(); renderCart();
+}
+
+async function checkout() {
+  if (USER && SB && CART.length) {
+    // push remaining cart items to supabase
+    for (const item of CART) {
+      const { worker, id, ...rest } = item;
+      await SB.from('bookings').insert({ ...rest, user_id: USER.id });
+    }
+  }
+  CART = []; localStorage.removeItem('khadim_cart');
+  updateCartBadge(); renderCart(); showSuccess();
+}
+
+function updateCartBadge() {
+  const b = document.getElementById('cart-badge');
+  if (CART.length) { b.style.display='flex'; b.textContent=CART.length; }
+  else b.style.display='none';
+}
+
+// ═══════════════════════════════════════════════════
+//  AUTH SCREEN
+// ═══════════════════════════════════════════════════
+let authMode = 'login';
+function authTab(mode) {
+  authMode = mode;
+  document.getElementById('tab-login').classList.toggle('on', mode==='login');
+  document.getElementById('tab-signup').classList.toggle('on', mode==='signup');
+  renderAuthForm();
+}
+function renderAuthForm() {
+  const isLogin = authMode==='login';
+  document.getElementById('auth-form-wrap').innerHTML = `
+    ${!isLogin?`<div class="fgrp"><label class="flbl">الاسم الكامل</label><input class="finp" id="af-name" placeholder="محمد أحمد"></div>`:''}
+    <div class="fgrp"><label class="flbl">البريد الإلكتروني</label><input class="finp" id="af-email" type="email" placeholder="example@email.com"></div>
+    <div class="fgrp"><label class="flbl">كلمة المرور</label><input class="finp" id="af-pass" type="password" placeholder="••••••••"></div>
+    <button class="btn-p" style="width:100%;padding:13px;font-size:15px" onclick="doAuth()">${isLogin?'تسجيل الدخول':'إنشاء حساب'}</button>
+    <div id="auth-err" style="color:var(--err);font-size:12px;margin-top:10px;text-align:center"></div>`;
+}
+async function doAuth() {
+  if (!SB) { toast('اتصل بـ Supabase أولاً'); return; }
+  const email = document.getElementById('af-email').value.trim();
+  const pass  = document.getElementById('af-pass').value;
+  let res;
+  if (authMode==='login') {
+    res = await SB.auth.signInWithPassword({ email, password: pass });
+  } else {
+    const name = document.getElementById('af-name')?.value||'';
+    res = await SB.auth.signUp({ email, password: pass, options:{ data:{ full_name: name }}});
+  }
+  if (res.error) { document.getElementById('auth-err').textContent = res.error.message; return; }
+  USER = res.data.user;
+  await loadProfile(); updateAuthBtn();
+  toast(authMode==='login'?'مرحباً بعودتك! 👋':'تم إنشاء الحساب بنجاح! 🎉');
+  go('home');
+}
+
+// ═══════════════════════════════════════════════════
+//  PROFILE
+// ═══════════════════════════════════════════════════
+async function renderProfile() {
+  const el = document.getElementById('profile-body');
+  if (!USER) {
+    el.innerHTML = `<div class="empty"><div class="eico">🔑</div><p>سجّل دخولك لعرض ملفك</p><button class="btn-p" style="margin-top:16px" onclick="go('auth')">تسجيل الدخول</button></div>`;
+    return;
+  }
+  // count stats
+  const { count: bCount } = await SB.from('bookings').select('id',{count:'exact',head:true}).eq('user_id',USER.id);
+  const { count: favCount } = await SB.from('favorites').select('id',{count:'exact',head:true}).eq('user_id',USER.id);
+  el.innerHTML = `
+    <div class="pcard">
+      <div class="pav">${PROFILE?.avatar_emoji||'👤'}</div>
+      <div class="pnm">${PROFILE?.full_name||USER.email}</div>
+      <div class="pem">${USER.email} · ${PROFILE?.city||'الإمارات'}</div>
+      <div class="pstats">
+        <div><div class="pst-v">${bCount||0}</div><div class="pst-l">حجز</div></div>
+        <div><div class="pst-v">${favCount||0}</div><div class="pst-l">مفضلة</div></div>
+      </div>
+    </div>
+    <div class="mlist">
+      <div class="mitem" onclick="go('orders')"><div class="mico">📋</div><div class="mtxt"><div class="mttl">طلباتي</div><div class="msub">جميع الحجوزات</div></div><span class="marrow">‹</span></div>
+      <div class="mitem"><div class="mico">❤️</div><div class="mtxt"><div class="mttl">المفضلة</div><div class="msub">العاملون المحفوظون</div></div><span class="marrow">‹</span></div>
+      <div class="mitem"><div class="mico">💳</div><div class="mtxt"><div class="mttl">طرق الدفع</div><div class="msub">إدارة البطاقات</div></div><span class="marrow">‹</span></div>
+      <div class="mitem"><div class="mico">📍</div><div class="mtxt"><div class="mttl">عناويني</div><div class="msub">إدارة العناوين المحفوظة</div></div><span class="marrow">‹</span></div>
+      <div class="mitem" onclick="signOut()"><div class="mico">🚪</div><div class="mtxt"><div class="mttl" style="color:var(--err)">تسجيل الخروج</div><div class="msub">الخروج من الحساب</div></div><span class="marrow">‹</span></div>
+    </div>`;
+}
+
+async function signOut() {
+  if (SB) await SB.auth.signOut();
+  USER = null; PROFILE = null; FAVS.clear();
+  updateAuthBtn(); go('home'); toast('تم تسجيل الخروج');
+}
+
+// ═══════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════
+function go(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  document.getElementById('sc-'+name)?.classList.add('on');
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('bn-'+name)?.classList.add('on');
+  window.scrollTo(0,0);
+  // on-demand renders
+  if (name==='orders') loadOrders();
+  if (name==='profile') renderProfile();
+  if (name==='cart') renderCart();
+  if (name==='auth') renderAuthForm();
+}
+
+// ═══════════════════════════════════════════════════
+//  SUCCESS / TOAST
+// ═══════════════════════════════════════════════════
+function showSuccess() {
+  document.getElementById('success-overlay').classList.add('show');
+}
+function hideSuccess() {
+  document.getElementById('success-overlay').classList.remove('show');
+  go('home');
+}
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ═══════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════
+(async () => {
+  const ok = await tryAutoConnect();
+  if (ok) await bootApp();
+})();
+</script>
+</body>
+</html>
