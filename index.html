@@ -423,20 +423,6 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filt
 <div class="toast" id="toast"></div>
 
 <script>
-// expose functions to global scope for inline onclick handlers
-window.go = function(name) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
-  document.getElementById('sc-'+name)?.classList.add('on');
-  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('on'));
-  document.getElementById('bn-'+name)?.classList.add('on');
-  window.scrollTo(0,0);
-  if (name==='orders') loadOrders();
-  if (name==='favorites') loadFavoritesScreen();
-  if (name==='profile') renderProfile();
-  if (name==='cart') renderCart();
-  if (name==='auth') renderAuthForm();
-};
-
 // ═══════════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════════
@@ -921,12 +907,14 @@ function authTab(mode) {
 }
 function renderAuthForm() {
   const isLogin = authMode==='login';
-  document.getElementById('auth-form-wrap').innerHTML = `
-    ${!isLogin?`<div class="fgrp"><label class="flbl">الاسم الكامل</label><input class="finp" id="af-name" placeholder="محمد أحمد"></div>`:''}
-    <div class="fgrp"><label class="flbl">البريد الإلكتروني</label><input class="finp" id="af-email" type="email" placeholder="example@email.com"></div>
-    <div class="fgrp"><label class="flbl">كلمة المرور</label><input class="finp" id="af-pass" type="password" placeholder="••••••••"></div>
-    <button class="btn-p" style="width:100%;padding:13px;font-size:15px" onclick="doAuth()">${isLogin?'تسجيل الدخول':'إنشاء حساب'}</button>
-    <div id="auth-err" style="color:var(--err);font-size:12px;margin-top:10px;text-align:center"></div>`;
+  const nameField = !isLogin ? '<div class="fgrp"><label class="flbl">الاسم الكامل</label><input class="finp" id="af-name" placeholder="محمد أحمد"></div>' : '';
+  const btnLabel = isLogin ? 'تسجيل الدخول' : 'إنشاء حساب';
+  document.getElementById('auth-form-wrap').innerHTML =
+    nameField +
+    '<div class="fgrp"><label class="flbl">البريد الإلكتروني</label><input class="finp" id="af-email" type="email" placeholder="example@email.com"></div>' +
+    '<div class="fgrp"><label class="flbl">كلمة المرور</label><input class="finp" id="af-pass" type="password" placeholder="••••••••"></div>' +
+    '<button class="btn-p" style="width:100%;padding:13px;font-size:15px" onclick="doAuth()">' + btnLabel + '</button>' +
+    '<div id="auth-err" style="color:var(--err);font-size:12px;margin-top:10px;text-align:center"></div>';
 }
 async function doAuth() {
   if (!SB) { toast('اتصل بـ Supabase أولاً'); return; }
@@ -952,7 +940,7 @@ async function doAuth() {
 async function loadFavoritesScreen() {
   const el = document.getElementById('favorites-body');
   if (!USER) {
-    el.innerHTML = '<div class="empty"><div class="eico">🔑</div><p>سجّل دخولك لعرض المفضلة</p><button class="btn-p" style="margin-top:16px" onclick="go('auth')">تسجيل الدخول</button></div>';
+    el.innerHTML = `<div class="empty"><div class="eico">🔑</div><p>سجّل دخولك لعرض المفضلة</p><button class="btn-p" style="margin-top:16px" onclick="go('auth')">تسجيل الدخول</button></div>`;
     return;
   }
   el.innerHTML = '<div class="loader"><div class="spin"></div></div>';
@@ -962,7 +950,7 @@ async function loadFavoritesScreen() {
     .eq('user_id', USER.id)
     .order('created_at', { ascending: false });
   if (error || !data?.length) {
-    el.innerHTML = '<div class="empty"><div class="eico">🤍</div><p>لا توجد عمال في المفضلة بعد<br><small>اضغط على القلب بجانب أي عامل لحفظه</small></p><button class="btn-p" style="margin-top:16px" onclick="go('services')">تصفح العمال</button></div>';
+    el.innerHTML = `<div class="empty"><div class="eico">🤍</div><p>لا توجد عمال في المفضلة بعد<br><small>اضغط على القلب بجانب أي عامل لحفظه</small></p><button class="btn-p" style="margin-top:16px" onclick="go('services')">تصفح العمال</button></div>`;
     return;
   }
   const favWorkers = data.map(d => d.workers).filter(Boolean);
@@ -1026,25 +1014,21 @@ function toast(msg) {
 }
 
 
-// expose all inline-onclick functions
-window.initSupabase     = () => initSupabase();
-window.closeModal       = () => closeModal();
-window.hideSuccess      = () => hideSuccess();
-window.openBooking      = (id) => openBooking(id);
-window.toggleFav        = (id, btn) => toggleFav(id, btn);
-window.selectPt         = (pt) => selectPt(pt);
-window.calcSummary      = () => calcSummary();
-window.confirmBooking   = () => confirmBooking();
-window.removeCart       = (id) => removeCart(id);
-window.checkout         = () => checkout();
-window.setCat           = (el, cat) => setCat(el, cat);
-window.setPt            = (el, pt) => setPt(el, pt);
-window.applyFilters     = () => applyFilters();
-window.filterCat        = (name) => filterCat(name);
-window.doAuth           = () => doAuth();
-window.authTab          = (mode) => authTab(mode);
-window.signOut          = () => signOut();
-window.handleAuthBtn    = () => handleAuthBtn();
+// ═══════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════
+function go(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  document.getElementById('sc-'+name)?.classList.add('on');
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('bn-'+name)?.classList.add('on');
+  window.scrollTo(0,0);
+  if (name==='orders') loadOrders();
+  if (name==='favorites') loadFavoritesScreen();
+  if (name==='profile') renderProfile();
+  if (name==='cart') renderCart();
+  if (name==='auth') renderAuthForm();
+}
 
 // ═══════════════════════════════════════════════════
 //  BOOT
