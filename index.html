@@ -251,6 +251,10 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filt
 .addr-btn.del:hover{border-color:var(--err);color:var(--err);}
 .addr-list{display:flex;flex-direction:column;gap:10px;}
 
+/* ───────── LANG SWITCHER ───────── */
+.lang-btn{background:var(--s2);border:1px solid rgba(31,166,122,.2);border-radius:8px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:700;color:var(--gold);font-family:"Cairo",sans-serif;transition:.2s;}
+.lang-btn:hover{background:var(--s3);}
+
 /* ───────── RESPONSIVE ───────── */
 @media(max-width:600px){
   .hero{padding:32px 16px 24px;}
@@ -301,6 +305,7 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
 <nav id="main-nav">
   <div class="logo" onclick="go('home')">خـدم</div>
   <div class="nav-right">
+    <button class="lang-btn" id="lang-btn" onclick="toggleLang()">EN</button>
     <button class="ic-btn" onclick="go('cart')">🛒<span class="badge" id="cart-badge" style="display:none">0</span></button>
     <button class="ic-btn" id="auth-btn" onclick="handleAuthBtn()">👤</button>
   </div>
@@ -534,12 +539,15 @@ let CATS = [];          // categories from db
 let FAVS = new Set();   // favorite worker ids
 let CART = [];          // local cart (saved to localStorage)
 var activeCat = 'all';
+var LANG = localStorage.getItem('lang') || 'ar';
 var activePt = 'all';
 var activeGender = 'all';
 var currentWorker = null;
 var selectedPt = null;
 
-const PT_LABEL = {fixed:'لكل مهمة',hourly:'ساعة',daily:'يوم',weekly:'أسبوع',monthly:'شهر'};
+var PT_LABEL_AR = {fixed:'لكل مهمة',hourly:'ساعة',daily:'يوم',weekly:'أسبوع',monthly:'شهر'};
+var PT_LABEL_EN = {fixed:'Per Task',hourly:'Hour',daily:'Day',weekly:'Week',monthly:'Month'};
+var PT_LABEL = PT_LABEL_AR;
 const PT_ICON  = {fixed:'✅',hourly:'⏱️',daily:'☀️',weekly:'📅',monthly:'🗓️'};
 const PT_UNIT  = {hourly:'ساعات',daily:'أيام',weekly:'أسابيع',monthly:'أشهر'};
 const PT_DESC  = {fixed:'سعر ثابت للمهمة كاملة بغض النظر عن الوقت',hourly:'يُحسب بعدد الساعات',daily:'يُحسب بعدد الأيام',weekly:'يُحسب بعدد الأسابيع',monthly:'يُحسب بعدد الأشهر'};
@@ -779,7 +787,7 @@ function renderHome() {
     return [
       '<div class="cat" data-name="', c.name_ar, '" onclick="filterCat(this.dataset.name)">',
       '<span class="ci svg-ico">', getCatIcon(c), '</span>',
-      '<div class="cn">', c.name_ar, '</div>',
+      '<div class="cn">', getCatName(c), '</div>',
       '<div class="cc">', cnt, ' عامل</div>',
       '</div>'
     ].join('');
@@ -1108,7 +1116,7 @@ async function confirmBooking() {
   const notes = document.getElementById('notes-inp').value.trim();
   if (!date || !addr) { toast('اختر العنوان أو أدخله أولاً ⚠️'); return; }
 
-  // ── لو عنوان جديد → احفظه تلقائياً في جدول العناوين ──
+  // ── لو عنوان جديد → احفظه في جدول العناوين ──
   var newForm = document.getElementById('baddr-new-form');
   var isNewAddr = newForm && newForm.classList.contains('open');
   if (isNewAddr && USER) {
@@ -1118,15 +1126,10 @@ async function confirmBooking() {
     var areaName = areaEl && areaEl.selectedIndex > 0 ? areaEl.options[areaEl.selectedIndex].dataset.name : '';
     var cityName = getCityName(cityId);
     if (fullInp) {
-      var { count } = await SB.from('addresses').select('id', {count:'exact', head:true}).eq('user_id', USER.id);
-      var isFirst = (count === 0);
+      var r = await SB.from('addresses').select('id', {count:'exact', head:true}).eq('user_id', USER.id);
       await SB.from('addresses').insert({
-        user_id:      USER.id,
-        label:        areaName || cityName || 'عنوان جديد',
-        full_address: fullInp,
-        city:         cityName,
-        area:         areaName,
-        is_default:   isFirst
+        user_id: USER.id, label: areaName || cityName || 'عنوان جديد',
+        full_address: fullInp, city: cityName, area: areaName, is_default: (r.count === 0)
       });
     }
   }
@@ -1137,47 +1140,33 @@ async function confirmBooking() {
   const vat   = Math.round(sub * 0.05);
   const total = sub + vat;
 
-  const bookingData = {
-    worker_id:     currentWorker.id,
-    pricing_type:  selectedPt,
-    quantity:      qty,
-    unit_price:    price,
-    subtotal:      sub,
-    vat:           vat,
-    total:         total,
-    address:       addr,
-    service_date:  date,
-    service_time:  time,
-    notes:         notes,
-    status:        'pending',
-    payment_status:'unpaid'
+  // ── دايماً يضيف للسلة المحلية أولاً ──
+  var cartItem = {
+    id:           Date.now(),
+    worker_id:    currentWorker.id,
+    pricing_type: selectedPt,
+    quantity:     qty,
+    unit_price:   price,
+    subtotal:     sub,
+    vat:          vat,
+    total:        total,
+    address:      addr,
+    service_date: date,
+    service_time: time,
+    notes:        notes,
+    status:       'pending',
+    payment_status: 'unpaid',
+    worker:       currentWorker
   };
 
-  if (USER) {
-    // مستخدم مسجّل: تأكد من الـ session ثم احفظ
-    const { data: sessionData } = await SB.auth.getSession();
-    const token = sessionData?.session?.access_token;
-    if (!token) {
-      toast('انتهت الجلسة — سجّل دخولك مجدداً 🔑');
-      go('auth'); return;
-    }
-    bookingData.user_id = USER.id;
-    const { error } = await SB.from('bookings').insert(bookingData);
-    if (error) {
-      console.error('Booking error:', error);
-      toast('خطأ في الحفظ: ' + (error.message || 'unknown'));
-      return;
-    }
-  } else {
-    // غير مسجّل: احفظ في السلة المحلية
-    CART.push({ id: Date.now(), ...bookingData, worker: currentWorker });
-    localStorage.setItem('khadim_cart', JSON.stringify(CART));
-    updateCartBadge();
-  }
+  CART.push(cartItem);
+  localStorage.setItem('khadim_cart', JSON.stringify(CART));
+  updateCartBadge();
   closeModal();
   renderCart();
   showSuccess();
 }
+
 
 function closeModal() { document.getElementById('book-overlay').classList.remove('open'); }
 
@@ -1218,15 +1207,48 @@ function removeCart(id) {
 }
 
 async function checkout() {
-  if (USER && SB && CART.length) {
-    // push remaining cart items to supabase
-    for (const item of CART) {
-      const { worker, id, ...rest } = item;
-      await SB.from('bookings').insert({ ...rest, user_id: USER.id });
-    }
+  if (!USER) { toast('سجّل دخولك لإتمام الدفع 🔑'); go('auth'); return; }
+
+  // ── تحقق من الـ session ──
+  var sess = await SB.auth.getSession();
+  if (!sess.data.session) { toast('انتهت الجلسة — سجّل دخولك مجدداً'); go('auth'); return; }
+
+  if (!CART.length) return;
+
+  // ── احفظ كل الحجوزات في Supabase ──
+  var errors = [];
+  for (var i = 0; i < CART.length; i++) {
+    var item = CART[i];
+    var payload = {
+      user_id:       USER.id,
+      worker_id:     item.worker_id,
+      pricing_type:  item.pricing_type,
+      quantity:      item.quantity,
+      unit_price:    item.unit_price,
+      subtotal:      item.subtotal,
+      vat:           item.vat,
+      total:         item.total,
+      address:       item.address,
+      service_date:  item.service_date,
+      service_time:  item.service_time,
+      notes:         item.notes,
+      status:        'pending',
+      payment_status:'unpaid'
+    };
+    var r = await SB.from('bookings').insert(payload);
+    if (r.error) errors.push(r.error.message);
   }
-  CART = []; localStorage.removeItem('khadim_cart');
-  updateCartBadge(); renderCart(); showSuccess();
+
+  if (errors.length) {
+    toast('خطأ في الحفظ: ' + errors[0]);
+    return;
+  }
+
+  CART = [];
+  localStorage.removeItem('khadim_cart');
+  updateCartBadge();
+  renderCart();
+  showSuccess();
 }
 
 function updateCartBadge() {
@@ -1324,7 +1346,7 @@ async function renderProfile() {
     '<div class="mlist">' +
       '<div class="mitem" onclick="go(&quot;orders&quot;)"><div class="mico">&#128203;</div><div class="mtxt"><div class="mttl">طلباتي</div><div class="msub">جميع الحجوزات</div></div><span class="marrow">&#x203A;</span></div>' +
       '<div class="mitem" onclick="go(&quot;favorites&quot;)"><div class="mico">&#10084;&#65039;</div><div class="mtxt"><div class="mttl">المفضلة</div><div class="msub">العاملون المحفوظون</div></div><span class="marrow">&#x203A;</span></div>' +
-      '<div class="mitem"><div class="mico">&#128179;</div><div class="mtxt"><div class="mttl">طرق الدفع</div><div class="msub">إدارة البطاقات</div></div><span class="marrow">&#x203A;</span></div>' +
+      /* طرق الدفع مخفية مؤقتاً */ 
       '<div class="mitem" onclick="go(&quot;addresses&quot;)"><div class="mico">&#128205;</div><div class="mtxt"><div class="mttl">عناويني</div><div class="msub">إدارة العناوين المحفوظة</div></div><span class="marrow">&#x203A;</span></div>' +
       '<div class="mitem" onclick="signOut()"><div class="mico">&#128682;</div><div class="mtxt"><div class="mttl" style="color:var(--err)">تسجيل الخروج</div><div class="msub">الخروج من الحساب</div></div><span class="marrow">&#x203A;</span></div>' +
     '</div>';
@@ -1554,6 +1576,75 @@ function toast(msg) {
 // ═══════════════════════════════════════════════════
 //  NAVIGATION
 // ═══════════════════════════════════════════════════
+// ─── TRANSLATION HELPERS ───
+var TRANSLATIONS = {
+  ar: {
+    search_ph: 'ابحث عن خدمة أو اسم...',
+    all: 'الكل', female: '👩 إناث', male: '👨 ذكور',
+    book_now: '📅 احجز الآن', confirm_book: '✅ تأكيد وإضافة للسلة',
+    checkout: '💳 إتمام الدفع', home: 'الرئيسية', services: 'الخدمات',
+    cart: 'السلة', orders: 'طلباتي', profile: 'حسابي',
+    explore: 'استكشف الخدمات', browse: 'تصفح الخدمات',
+    featured: '⭐ أبرز العاملين', top_workers: 'الأكثر طلباً هذا الأسبوع',
+    per_task: 'لكل مهمة', per_hour: 'ساعة', per_day: 'يوم',
+    per_week: 'أسبوع', per_month: 'شهر',
+    rating: 'تقييم', exp: 'سنوات خبرة', available: 'متاح',
+    busy: 'مشغول', new_w: 'جديد'
+  },
+  en: {
+    search_ph: 'Search service or name...',
+    all: 'All', female: '👩 Female', male: '👨 Male',
+    book_now: '📅 Book Now', confirm_book: '✅ Confirm & Add to Cart',
+    checkout: '💳 Checkout', home: 'Home', services: 'Services',
+    cart: 'Cart', orders: 'Orders', profile: 'Profile',
+    explore: 'Explore Services', browse: 'Browse Services',
+    featured: '⭐ Top Workers', top_workers: 'Most requested this week',
+    per_task: 'Per Task', per_hour: 'Hour', per_day: 'Day',
+    per_week: 'Week', per_month: 'Month',
+    rating: 'Rating', exp: 'yrs exp', available: 'Available',
+    busy: 'Busy', new_w: 'New'
+  }
+};
+
+function t(key) {
+  return (TRANSLATIONS[LANG] || TRANSLATIONS.ar)[key] || key;
+}
+
+function n(ar, en) {
+  return LANG === 'en' && en ? en : ar;
+}
+
+function toggleLang() {
+  LANG = LANG === 'ar' ? 'en' : 'ar';
+  localStorage.setItem('lang', LANG);
+  document.getElementById('lang-btn').textContent = LANG === 'ar' ? 'EN' : 'ع';
+  document.documentElement.lang = LANG;
+  document.documentElement.dir = LANG === 'ar' ? 'rtl' : 'ltr';
+  // re-render current screen
+  renderHome();
+  renderServices();
+  renderFilterChips();
+  updateBottomNav();
+}
+
+function updateBottomNav() {
+  var btns = [
+    {id:'bn-home',    key:'home'},
+    {id:'bn-services',key:'services'},
+    {id:'bn-cart',    key:'cart'},
+    {id:'bn-orders',  key:'orders'},
+    {id:'bn-profile', key:'profile'}
+  ];
+  btns.forEach(function(b) {
+    var el = document.getElementById(b.id);
+    if (el) el.lastChild.textContent = t(b.key);
+  });
+}
+
+function getCatName(cat) { return n(cat.name_ar, cat.name_en); }
+function getCityName2(city) { return n(city.name_ar, city.name_en); }
+function getNatName(nat) { return n(nat.name_ar, nat.name_en); }
+
 function go(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
   document.getElementById('sc-'+name)?.classList.add('on');
