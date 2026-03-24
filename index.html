@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>خدم - الخدمات المنزلية</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
 <!-- Supabase JS -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -119,7 +118,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filt
 .wacts{display:flex;gap:8px;}
 .btn-book{flex:1;background:linear-gradient(135deg,var(--gold-light),var(--gold));color:var(--deep);font-family:'Cairo',sans-serif;font-weight:700;font-size:12px;padding:9px;border:none;border-radius:9px;cursor:pointer;transition:.2s;}
 .btn-book:hover{transform:scale(1.02);box-shadow:0 3px 12px rgba(201,168,76,.3);}
-.btn-fav{background:var(--s2);border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:9px 13px;cursor:pointer;font-size:15px;transition:.2s;}
+.btn-fav{background:var(--s2);border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:9px 13px;cursor:pointer;font-size:18px;transition:.2s;font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif;line-height:1;display:flex;align-items:center;justify-content:center;width:38px;height:38px;}
 .btn-fav:hover{background:rgba(255,107,107,.12);border-color:var(--err);}
 .btn-fav.on{background:rgba(255,107,107,.18);border-color:var(--err);}
 
@@ -669,7 +668,7 @@ function workerCard(w) {
       <div class="prices">${pts}</div>
       <div class="wacts">
         <button class="btn-book" onclick="openBooking('${w.id}')">📅 احجز الآن</button>
-        <button class="btn-fav ${isFav?'on':''}" id="fav-${w.id}" onclick="toggleFav('${w.id}',this)">${isFav?'❤️':'🤍'}</button>
+        <button class="btn-fav ${isFav?'on':''}" id="fav-${w.id}" onclick="toggleFav('${w.id}',this)"><span style="font-family:'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif;font-size:18px">${isFav?'❤️':'🤍'}</span></button>
       </div>
     </div>
   </div>`;
@@ -706,11 +705,11 @@ async function toggleFav(wid, btn) {
   if (!USER) { toast('سجّل دخولك أولاً 🔑'); go('auth'); return; }
   if (FAVS.has(wid)) {
     await SB.from('favorites').delete().eq('user_id',USER.id).eq('worker_id',wid);
-    FAVS.delete(wid); btn.textContent='🤍'; btn.classList.remove('on');
+    FAVS.delete(wid); btn.innerHTML='<span style="font-family:Segoe UI Emoji,Apple Color Emoji,Noto Color Emoji,sans-serif;font-size:18px">🤍</span>'; btn.classList.remove('on');
     toast('تم الحذف من المفضلة');
   } else {
     await SB.from('favorites').insert({user_id:USER.id,worker_id:wid});
-    FAVS.add(wid); btn.textContent='❤️'; btn.classList.add('on');
+    FAVS.add(wid); btn.innerHTML='<span style="font-family:Segoe UI Emoji,Apple Color Emoji,Noto Color Emoji,sans-serif;font-size:18px">❤️</span>'; btn.classList.add('on');
     toast('تم الإضافة للمفضلة ❤️');
   }
 }
