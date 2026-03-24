@@ -537,11 +537,11 @@ let WORKERS = [];       // all workers from db
 let CATS = [];          // categories from db
 let FAVS = new Set();   // favorite worker ids
 let CART = [];          // local cart (saved to localStorage)
-let activeCat = 'all';
-let activePt = 'all';
-let activeGender = 'all';
-let currentWorker = null;
-let selectedPt = null;
+var activeCat = 'all';
+var activePt = 'all';
+var activeGender = 'all';
+var currentWorker = null;
+var selectedPt = null;
 
 const PT_LABEL = {fixed:'لكل مهمة',hourly:'ساعة',daily:'يوم',weekly:'أسبوع',monthly:'شهر'};
 const PT_ICON  = {fixed:'✅',hourly:'⏱️',daily:'☀️',weekly:'📅',monthly:'🗓️'};
@@ -800,7 +800,7 @@ function renderServices() {
     const matchCat = activeCat==='all' ||
       (w.cats && w.cats.some(function(c){ return c.name_ar === activeCat; })) ||
       w.role_ar === activeCat;
-    const matchGender = activeGender==='all' || w.gender === activeGender || w.gender === 'any';
+    const matchGender = activeGender==='all' || w.gender === activeGender || !w.gender || w.gender === 'any';
     const matchPt  = activePt==='all' || (w['price_'+activePt] !== null && w['price_'+activePt] !== undefined);
     const matchSrch= !search || w.name.toLowerCase().includes(search) || w.role_ar.toLowerCase().includes(search) ||
       (w.cats && w.cats.some(function(c){ return c.name_ar.includes(search); }));
@@ -853,6 +853,7 @@ function workerCard(w) {
 function setGender(el, gender) {
   activeGender = activeGender === gender ? 'all' : gender;
   document.querySelectorAll('[data-gender]').forEach(function(c){ c.classList.toggle('on', c.dataset.gender === activeGender); });
+  console.log('Gender filter:', activeGender, '| workers with gender:', WORKERS.filter(function(w){ return w.gender; }).map(function(w){ return w.name+':'+w.gender; }));
   applyFilters();
 }
 
