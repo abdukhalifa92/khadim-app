@@ -320,6 +320,15 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filt
   </div>
 </div>
 
+<!-- ── FAVORITES ── -->
+<div class="screen" id="sc-favorites">
+  <div class="sec" style="padding-top:24px">
+    <div class="sec-ttl">❤️ المفضلة</div>
+    <div class="sec-sub">العاملون الذين حفظتهم</div>
+    <div id="favorites-body"></div>
+  </div>
+</div>
+
 <!-- ── ORDERS ── -->
 <div class="screen" id="sc-orders">
   <div class="sec" style="padding-top:24px">
@@ -712,6 +721,9 @@ async function toggleFav(wid, btn) {
     FAVS.add(wid); btn.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24" fill="#FF6B6B" stroke="#FF6B6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`; btn.classList.add('on');
     toast('تم الإضافة للمفضلة ❤️');
   }
+  // refresh favorites screen if open
+  const favScreen = document.getElementById('sc-favorites');
+  if (favScreen && favScreen.classList.contains('on')) loadFavoritesScreen();
 }
 
 // ═══════════════════════════════════════════════════
@@ -923,6 +935,26 @@ async function doAuth() {
 // ═══════════════════════════════════════════════════
 //  PROFILE
 // ═══════════════════════════════════════════════════
+async function loadFavoritesScreen() {
+  const el = document.getElementById('favorites-body');
+  if (!USER) {
+    el.innerHTML = '<div class="empty"><div class="eico">🔑</div><p>سجّل دخولك لعرض المفضلة</p><button class="btn-p" style="margin-top:16px" onclick="go('auth')">تسجيل الدخول</button></div>';
+    return;
+  }
+  el.innerHTML = '<div class="loader"><div class="spin"></div></div>';
+  const { data, error } = await SB
+    .from('favorites')
+    .select('worker_id, workers(*)')
+    .eq('user_id', USER.id)
+    .order('created_at', { ascending: false });
+  if (error || !data?.length) {
+    el.innerHTML = '<div class="empty"><div class="eico">🤍</div><p>لا توجد عمال في المفضلة بعد<br><small>اضغط على القلب بجانب أي عامل لحفظه</small></p><button class="btn-p" style="margin-top:16px" onclick="go('services')">تصفح العمال</button></div>';
+    return;
+  }
+  const favWorkers = data.map(d => d.workers).filter(Boolean);
+  el.innerHTML = '<div class="grid">' + favWorkers.map(w => workerCard(w)).join('') + '</div>';
+}
+
 async function renderProfile() {
   const el = document.getElementById('profile-body');
   if (!USER) {
@@ -944,7 +976,7 @@ async function renderProfile() {
     </div>
     <div class="mlist">
       <div class="mitem" onclick="go('orders')"><div class="mico">📋</div><div class="mtxt"><div class="mttl">طلباتي</div><div class="msub">جميع الحجوزات</div></div><span class="marrow">‹</span></div>
-      <div class="mitem"><div class="mico">❤️</div><div class="mtxt"><div class="mttl">المفضلة</div><div class="msub">العاملون المحفوظون</div></div><span class="marrow">‹</span></div>
+      <div class="mitem" onclick="go('favorites')"><div class="mico">❤️</div><div class="mtxt"><div class="mttl">المفضلة</div><div class="msub">العاملون المحفوظون</div></div><span class="marrow">‹</span></div>
       <div class="mitem"><div class="mico">💳</div><div class="mtxt"><div class="mttl">طرق الدفع</div><div class="msub">إدارة البطاقات</div></div><span class="marrow">‹</span></div>
       <div class="mitem"><div class="mico">📍</div><div class="mtxt"><div class="mttl">عناويني</div><div class="msub">إدارة العناوين المحفوظة</div></div><span class="marrow">‹</span></div>
       <div class="mitem" onclick="signOut()"><div class="mico">🚪</div><div class="mtxt"><div class="mttl" style="color:var(--err)">تسجيل الخروج</div><div class="msub">الخروج من الحساب</div></div><span class="marrow">‹</span></div>
@@ -968,6 +1000,7 @@ function go(name) {
   window.scrollTo(0,0);
   // on-demand renders
   if (name==='orders') loadOrders();
+  if (name==='favorites') loadFavoritesScreen();
   if (name==='profile') renderProfile();
   if (name==='cart') renderCart();
   if (name==='auth') renderAuthForm();
