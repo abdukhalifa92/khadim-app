@@ -475,7 +475,7 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
       </div>
       <div class="fgrp">
         <label class="flbl">المدينة</label>
-        <select class="fsel" id="addr-city">
+        <select class="fsel" id="addr-city" onchange="updateAreas()">
           <option value="أبوظبي">أبوظبي</option>
           <option value="دبي" selected>دبي</option>
           <option value="الشارقة">الشارقة</option>
@@ -483,6 +483,12 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
           <option value="رأس الخيمة">رأس الخيمة</option>
           <option value="الفجيرة">الفجيرة</option>
           <option value="أم القيوين">أم القيوين</option>
+        </select>
+      </div>
+      <div class="fgrp">
+        <label class="flbl">المنطقة</label>
+        <select class="fsel" id="addr-area">
+          <option value="">-- اختر المنطقة --</option>
         </select>
       </div>
       <div class="fgrp" style="display:flex;align-items:center;gap:10px">
@@ -1100,6 +1106,27 @@ async function signOut() {
 }
 
 // ═══════════════════════════════════════════════════
+//  AREAS DATA
+// ═══════════════════════════════════════════════════
+var CITY_AREAS = {
+  'أبوظبي': ['الجزيرة','المارية','الريم','الروضة','الخالدية','مصفح','شخبوط','محمد بن زايد','الشامخة','بني ياس','الوثبة','خليفة أ','خليفة ب','الكرامة','المشرف','الزعاب','النادي السياحي','الدفنة','الرحبة','السمحة'],
+  'دبي': ['ديرة','بر دبي','جميرا','المرسى','الخليج التجاري','وسط مدينة دبي','النهدة','القصيص','مردف','الورقاء','الراشدية','الهمرية','ميناء راشد','البرشاء','الكرامة','عود ميثاء','الرقة','الجميرا','الصفوح','مدينة دبي للإنترنت','الجداف','القوز','الروضة','الثمام','المزهر'],
+  'الشارقة': ['الخان','القصباء','النهدة','المجاز','الصجعة','الصناعية','الرميلة','بحيرة الخالد','أبو شغارة','الطلاع','الحيرة','القادسية','الرفاعة','المدينة الجامعية','خور فكان','كلباء','ضبا'],
+  'عجمان': ['الجرف','المويهات','الراشدية','الحميدية','مصفوت','مناخة','الزورة','النعيمية','الرميلة','الكورنيش','الأحمدي'],
+  'رأس الخيمة': ['الرميلة','المعمورة','خزام','شعم','الجزيرة الحمراء','الحمرا','المنيعي','سيح الحصن','الغيل','الجميلة'],
+  'الفجيرة': ['وسط المدينة','قدفع','مسافي','دبا الفجيرة','شرف','الحيل','بدية'],
+  'أم القيوين': ['وسط المدينة','الرحبة','الدار','الكورنيش','المعلا','الرفاعة']
+};
+
+function updateAreas() {
+  var city = document.getElementById('addr-city').value;
+  var areasSel = document.getElementById('addr-area');
+  var areas = CITY_AREAS[city] || [];
+  areasSel.innerHTML = '<option value="">-- اختر المنطقة --</option>' +
+    areas.map(function(a) { return '<option value="' + a + '">' + a + '</option>'; }).join('');
+}
+
+// ═══════════════════════════════════════════════════
 //  ADDRESSES
 // ═══════════════════════════════════════════════════
 var editingAddrId = null;
@@ -1125,7 +1152,7 @@ async function loadAddressesScreen() {
       '<div class="addr-info">' +
         '<div class="addr-label">' + a.label + (a.is_default ? '<span class="addr-default-tag">افتراضي</span>' : '') + '</div>' +
         '<div class="addr-full">' + a.full_address + '</div>' +
-        '<div class="addr-city">&#128205; ' + (a.city || '') + '</div>' +
+        '<div class="addr-city">&#128205; ' + (a.city || '') + (a.area ? ' &mdash; ' + a.area : '') + '</div>' +
       '</div>' +
       '<div class="addr-actions">' +
         '<button class="addr-btn" onclick="editAddress(&quot;' + a.id + '&quot;)">&#9998; تعديل</button>' +
@@ -1146,12 +1173,17 @@ function openAddressModal(id) {
   document.getElementById('addr-city').value = 'دبي';
   document.getElementById('addr-default').checked = false;
   document.getElementById('addr-err').textContent = '';
+  updateAreas();
   if (id) {
     SB.from('addresses').select('*').eq('id', id).single().then(function(res) {
       if (res.data) {
         document.getElementById('addr-label').value = res.data.label || '';
         document.getElementById('addr-full').value = res.data.full_address || '';
         document.getElementById('addr-city').value = res.data.city || 'دبي';
+        updateAreas();
+        setTimeout(function() {
+          document.getElementById('addr-area').value = res.data.area || '';
+        }, 50);
         document.getElementById('addr-default').checked = res.data.is_default || false;
       }
     });
@@ -1168,12 +1200,12 @@ async function saveAddress() {
   var label = document.getElementById('addr-label').value.trim();
   var full  = document.getElementById('addr-full').value.trim();
   var city  = document.getElementById('addr-city').value;
+  var area  = document.getElementById('addr-area').value;
   var isDef = document.getElementById('addr-default').checked;
-  if (!label || !full) { document.getElementById('addr-err').textContent = 'الرجاء تعبئة جميع الحقول'; return; }
+  if (!label || !full || !area) { document.getElementById('addr-err').textContent = 'الرجاء تعبئة جميع الحقول واختيار المنطقة'; return; }
   document.getElementById('addr-err').textContent = '';
-  // if setting as default, unset others first
   if (isDef) { await SB.from('addresses').update({is_default: false}).eq('user_id', USER.id); }
-  var payload = { user_id: USER.id, label: label, full_address: full, city: city, is_default: isDef };
+  var payload = { user_id: USER.id, label: label, full_address: full, city: city, area: area, is_default: isDef };
   var res;
   if (editingAddrId) {
     res = await SB.from('addresses').update(payload).eq('id', editingAddrId);
