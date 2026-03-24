@@ -78,7 +78,10 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filt
 .cat::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(31,166,122,.08),transparent);opacity:0;transition:.3s;}
 .cat:hover{transform:translateY(-3px);border-color:var(--gold);box-shadow:0 8px 28px rgba(31,166,122,.12);}
 .cat:hover::before{opacity:1;}
-.cat .ci{font-size:36px;display:block;margin-bottom:10px;}
+.cat .ci{display:flex;align-items:center;justify-content:center;margin-bottom:10px;}
+.svg-ico svg{width:38px;height:38px;color:var(--gold);}
+.chip-ico{display:inline-flex;vertical-align:middle;margin-left:4px;}
+.chip-ico svg{width:14px;height:14px;}
 .cat .cn{font-size:13px;font-weight:700;}
 .cat .cc{font-size:11px;color:var(--muted);margin-top:3px;}
 
@@ -773,14 +776,16 @@ function renderHome() {
   // categories
   const cg = document.getElementById('cats-home');
   if (!CATS.length) { cg.innerHTML = '<div class="loader"><div class="spin"></div></div>'; return; }
-  cg.innerHTML = CATS.map(c => {
-    const cnt = WORKERS.filter(function(w){ return w.cats && w.cats.some(function(cat){ return cat.name_ar === c.name_ar; }); }).length;
-    return `<div class="cat" onclick="filterCat('${c.name_ar}')">
-      <span class="ci">${c.icon}</span>
-      <div class="cn">${c.name_ar}</div>
-      <div class="cc">${cnt} عامل</div>
-    </div>`;
-  }).join('');
+  cg.innerHTML = CATS.map(function(c) {
+    var cnt = WORKERS.filter(function(w){ return w.cats && w.cats.some(function(cat){ return cat.name_ar === c.name_ar; }); }).length;
+    return [
+      '<div class="cat" data-name="', c.name_ar, '" onclick="filterCat(this.dataset.name)">',
+      '<span class="ci svg-ico">', getCatIcon(c), '</span>',
+      '<div class="cn">', c.name_ar, '</div>',
+      '<div class="cc">', cnt, ' عامل</div>',
+      '</div>'
+    ].join('');
+  }).join('');;
   // featured (top 4)
   const fg = document.getElementById('featured-grid');
   fg.innerHTML = WORKERS.slice(0,4).map(w => workerCard(w)).join('');
@@ -794,9 +799,9 @@ function renderFilterChips() {
   var catWrap = document.getElementById("cat-chips");
   if (catWrap) {
     var chips = [];
-    chips.push(makeChip("cat", "all", "الكل", "الكل", activeCat === "all"));
+    chips.push(makeChip("cat", "all", "الكل", "الكل", activeCat === "all", {name_ar:"الكل",icon_key:"default"}));
     CATS.forEach(function(c) {
-      chips.push(makeChip("cat", c.name_ar, c.icon + " " + c.name_ar, c.name_ar, activeCat === c.name_ar));
+      chips.push(makeChip("cat", c.name_ar, c.name_ar, c.name_ar, activeCat === c.name_ar, c));
     });
     catWrap.innerHTML = chips.join("");
   }
@@ -808,12 +813,16 @@ function renderFilterChips() {
   }
 }
 
-function makeChip(type, val, label, fnVal, isOn) {
+function makeChip(type, val, label, fnVal, isOn, cat) {
   var cls = "chip" + (isOn ? " on" : "");
   var fn  = type === "cat"
     ? "setCat(this, this.dataset.val)"
     : "setGender(this, this.dataset.val)";
-  return "<button class='" + cls + "' data-" + type + "='" + val + "' data-val='" + fnVal + "' onclick='" + fn + "'>" + label + "</button>";
+  if (val === "all" || type === "gender") {
+    return "<button class='" + cls + "' data-" + type + "='" + val + "' data-val='" + fnVal + "' onclick='" + fn + "'>" + label + "</button>";
+  }
+  var ico = '<span class="chip-ico">' + getCatIcon(cat) + '</span>';
+  return "<button class='" + cls + "' data-" + type + "='" + val + "' data-val='" + fnVal + "' onclick='" + fn + "'>" + ico + cat.name_ar + "</button>";
 }
 
 function renderServices() {
@@ -853,7 +862,7 @@ function workerCard(w) {
       <div class="wname">${w.name}</div>
       <div class="wrole">${
         w.cats && w.cats.length
-          ? w.cats.map(function(c){ return c.icon+' '+c.name_ar; }).join(' · ')
+          ? w.cats.map(function(c){ return c.name_ar; }).join(' · ')
           : w.role_ar
       } · ${w.nat_display||w.nationality||''}</div>
       <div class="wmeta">
@@ -893,10 +902,6 @@ function applyFilters() { renderServices(); }
 function filterCat(name) {
   activeCat = name;
   go('services');
-  setTimeout(() => {
-    document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.cat===name));
-    renderServices();
-  }, 50);
 }
 
 // ═══════════════════════════════════════════════════
@@ -1336,7 +1341,29 @@ async function signOut() {
 //  CITIES & AREAS (from Supabase)
 // ═══════════════════════════════════════════════════
 var CITIES_DATA = [];
-var NATIONALITIES = [];  // [{id, name}, ...]
+var NATIONALITIES = [];
+
+// SVG icons map for categories
+var CAT_ICONS = {
+  maid:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+  cleaning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 22l3-3m0 0l7-7m-7 7l7 7M17.5 3.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 8.5-8.5z"/></svg>',
+  cooking:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>',
+  baby:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M6 21v-1a6 6 0 0 1 12 0v1"/><path d="M9 10.5c0 1 .5 2 1.5 2.5"/></svg>',
+  laundry:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="20" rx="2"/><circle cx="12" cy="13" r="5"/><circle cx="12" cy="13" r="2"/><line x1="7" y1="6" x2="7.01" y2="6"/><line x1="10" y1="6" x2="12" y2="6"/></svg>',
+  elderly:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="5" r="3"/><path d="M12 8v5l-3 3m3-3l3 3"/><path d="M9 21l1-4m4 4l-1-4m-3 0h4"/></svg>',
+  ironing:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 16l4-10h10l4 6H7"/><path d="M3 16h18v2H3z"/><circle cx="19" cy="20" r="1"/><circle cx="5" cy="20" r="1"/></svg>',
+  garden:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22V12m0 0C12 7 7 4 4 6c0 4 3 7 8 6zm0 0c0-5 5-8 8-6 0 4-3 7-8 6z"/></svg>',
+  carwash:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="10" width="22" height="7" rx="2"/><path d="M5 10V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M8 5l1-3m6 3l1-3m-5 3V2"/></svg>',
+  pest:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="13" rx="4" ry="5"/><path d="M8 13H4m4 0-2-3m12 3h4m-4 0 2-3M8 9l-2-2M16 9l2-2M10 8.5c0-1.1.9-2 2-2s2 .9 2 2"/></svg>',
+  ac:       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="8" rx="2"/><path d="M7 13v4m5-4v6m5-6v4"/><path d="M6 9h.01M9 9h.01M12 9h.01"/></svg>',
+  deep:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',
+  default:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+};
+
+function getCatIcon(cat) {
+  var key = cat.icon_key || cat.icon || 'default';
+  return CAT_ICONS[key] || CAT_ICONS['default'];
+}  // [{id, name}, ...]
 var AREAS_DATA  = [];  // [{id, city_id, name}, ...]
 
 async function loadNationalities() {
