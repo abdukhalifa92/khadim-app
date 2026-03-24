@@ -694,14 +694,21 @@ async function loadCategories() {
 
 async function loadWorkers() {
   if (!SB) return;
+  // fetch workers with their categories via junction table
   const { data, error } = await SB
     .from('workers')
-    .select('*, categories(name_ar,icon)')
+    .select('*, worker_categories(category_id, categories(name_ar, icon))')
     .eq('is_active', true)
     .order('rating', { ascending: false });
   if (!error) {
-    WORKERS = data;
-    document.getElementById('stat-workers').textContent = WORKERS.filter(w=>w.status==='available').length + '+';
+    // attach categories array to each worker
+    WORKERS = data.map(function(w) {
+      var cats = (w.worker_categories || []).map(function(wc) { return wc.categories; }).filter(Boolean);
+      return Object.assign({}, w, { cats: cats });
+    });
+    document.getElementById('stat-workers').textContent = WORKERS.filter(function(w){ return w.status==='available'; }).length + '+';
+  } else {
+    console.error('loadWorkers error:', error);
   }
 }
 
@@ -753,7 +760,7 @@ function renderHome() {
   const cg = document.getElementById('cats-home');
   if (!CATS.length) { cg.innerHTML = '<div class="loader"><div class="spin"></div></div>'; return; }
   cg.innerHTML = CATS.map(c => {
-    const cnt = WORKERS.filter(w => w.categories?.name_ar === c.name_ar).length;
+    const cnt = WORKERS.filter(function(w){ return w.cats && w.cats.some(function(cat){ return cat.name_ar === c.name_ar; }); }).length;
     return `<div class="cat" onclick="filterCat('${c.name_ar}')">
       <span class="ci">${c.icon}</span>
       <div class="cn">${c.name_ar}</div>
@@ -772,9 +779,12 @@ function renderHome() {
 function renderServices() {
   const search = (document.getElementById('search-inp')?.value||'').toLowerCase();
   let list = WORKERS.filter(w => {
-    const matchCat = activeCat==='all' || w.categories?.name_ar === activeCat;
+    const matchCat = activeCat==='all' ||
+      (w.cats && w.cats.some(function(c){ return c.name_ar === activeCat; })) ||
+      w.role_ar === activeCat;
     const matchPt  = activePt==='all' || (w['price_'+activePt] !== null && w['price_'+activePt] !== undefined);
-    const matchSrch= !search || w.name.toLowerCase().includes(search) || w.role_ar.toLowerCase().includes(search);
+    const matchSrch= !search || w.name.toLowerCase().includes(search) || w.role_ar.toLowerCase().includes(search) ||
+      (w.cats && w.cats.some(function(c){ return c.name_ar.includes(search); }));
     return matchCat && matchPt && matchSrch;
   });
   const sg = document.getElementById('services-grid');
@@ -793,7 +803,11 @@ function workerCard(w) {
     <div class="wimg">${w.icon||'👤'}<span class="wbadge ${st.cls}">${st.txt}</span></div>
     <div class="wbody">
       <div class="wname">${w.name}</div>
-      <div class="wrole">${w.role_ar} · ${w.nationality||''}</div>
+      <div class="wrole">${
+        w.cats && w.cats.length
+          ? w.cats.map(function(c){ return c.icon+' '+c.name_ar; }).join(' · ')
+          : w.role_ar
+      } · ${w.nationality||''}</div>
       <div class="wmeta">
         <span><span class="stars">★</span> ${w.rating} (${w.reviews_count})</span>
         <span>⏳ ${w.experience_years} سنوات</span>
