@@ -476,13 +476,7 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
       <div class="fgrp">
         <label class="flbl">المدينة</label>
         <select class="fsel" id="addr-city" onchange="updateAreas()">
-          <option value="أبوظبي">أبوظبي</option>
-          <option value="دبي" selected>دبي</option>
-          <option value="الشارقة">الشارقة</option>
-          <option value="عجمان">عجمان</option>
-          <option value="رأس الخيمة">رأس الخيمة</option>
-          <option value="الفجيرة">الفجيرة</option>
-          <option value="أم القيوين">أم القيوين</option>
+          <option value="">-- اختر المدينة --</option>
         </select>
       </div>
       <div class="fgrp">
@@ -635,7 +629,7 @@ async function bootApp() {
   updateAuthBtn();
   CART = JSON.parse(localStorage.getItem('khadim_cart') || '[]');
   updateCartBadge();
-  await Promise.all([loadCategories(), loadWorkers(), loadFavs()]);
+  await Promise.all([loadCategories(), loadWorkers(), loadFavs(), loadCitiesAreas()]);
   renderHome();
   renderServices();
 }
@@ -1106,24 +1100,48 @@ async function signOut() {
 }
 
 // ═══════════════════════════════════════════════════
-//  AREAS DATA
+//  CITIES & AREAS (from Supabase)
 // ═══════════════════════════════════════════════════
-var CITY_AREAS = {
-  'أبوظبي': ['الجزيرة','المارية','الريم','الروضة','الخالدية','مصفح','شخبوط','محمد بن زايد','الشامخة','بني ياس','الوثبة','خليفة أ','خليفة ب','الكرامة','المشرف','الزعاب','النادي السياحي','الدفنة','الرحبة','السمحة'],
-  'دبي': ['ديرة','بر دبي','جميرا','المرسى','الخليج التجاري','وسط مدينة دبي','النهدة','القصيص','مردف','الورقاء','الراشدية','الهمرية','ميناء راشد','البرشاء','الكرامة','عود ميثاء','الرقة','الجميرا','الصفوح','مدينة دبي للإنترنت','الجداف','القوز','الروضة','الثمام','المزهر'],
-  'الشارقة': ['الخان','القصباء','النهدة','المجاز','الصجعة','الصناعية','الرميلة','بحيرة الخالد','أبو شغارة','الطلاع','الحيرة','القادسية','الرفاعة','المدينة الجامعية','خور فكان','كلباء','ضبا'],
-  'عجمان': ['الجرف','المويهات','الراشدية','الحميدية','مصفوت','مناخة','الزورة','النعيمية','الرميلة','الكورنيش','الأحمدي'],
-  'رأس الخيمة': ['الرميلة','المعمورة','خزام','شعم','الجزيرة الحمراء','الحمرا','المنيعي','سيح الحصن','الغيل','الجميلة'],
-  'الفجيرة': ['وسط المدينة','قدفع','مسافي','دبا الفجيرة','شرف','الحيل','بدية'],
-  'أم القيوين': ['وسط المدينة','الرحبة','الدار','الكورنيش','المعلا','الرفاعة']
-};
+var CITIES_DATA = [];  // [{id, name}, ...]
+var AREAS_DATA  = [];  // [{id, city_id, name}, ...]
+
+async function loadCitiesAreas() {
+  if (!SB) return;
+  var r1 = await SB.from('cities').select('id,name').eq('is_active', true).order('sort_order');
+  var r2 = await SB.from('areas').select('id,city_id,name').eq('is_active', true).order('sort_order');
+  if (!r1.error) CITIES_DATA = r1.data || [];
+  if (!r2.error) AREAS_DATA  = r2.data || [];
+  renderCitySelect();
+}
+
+function renderCitySelect() {
+  var sel = document.getElementById('addr-city');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- اختر المدينة --</option>' +
+    CITIES_DATA.map(function(c) {
+      return '<option value="' + c.id + '">' + c.name + '</option>';
+    }).join('');
+  updateAreas();
+}
 
 function updateAreas() {
-  var city = document.getElementById('addr-city').value;
+  var cityId   = document.getElementById('addr-city').value;
   var areasSel = document.getElementById('addr-area');
-  var areas = CITY_AREAS[city] || [];
+  var filtered = AREAS_DATA.filter(function(a) { return a.city_id === cityId; });
   areasSel.innerHTML = '<option value="">-- اختر المنطقة --</option>' +
-    areas.map(function(a) { return '<option value="' + a + '">' + a + '</option>'; }).join('');
+    filtered.map(function(a) {
+      return '<option value="' + a.id + '" data-name="' + a.name + '">' + a.name + '</option>';
+    }).join('');
+}
+
+function getAreaName(areaId) {
+  var a = AREAS_DATA.find(function(x) { return x.id === areaId; });
+  return a ? a.name : areaId;
+}
+
+function getCityName(cityId) {
+  var c = CITIES_DATA.find(function(x) { return x.id === cityId; });
+  return c ? c.name : cityId;
 }
 
 // ═══════════════════════════════════════════════════
@@ -1170,7 +1188,7 @@ function openAddressModal(id) {
   document.getElementById('addr-modal-title').innerHTML = id ? '&#9998; تعديل العنوان' : '&#128205; إضافة عنوان';
   document.getElementById('addr-label').value = '';
   document.getElementById('addr-full').value = '';
-  document.getElementById('addr-city').value = 'دبي';
+  document.getElementById('addr-city').value = '';
   document.getElementById('addr-default').checked = false;
   document.getElementById('addr-err').textContent = '';
   updateAreas();
@@ -1179,10 +1197,14 @@ function openAddressModal(id) {
       if (res.data) {
         document.getElementById('addr-label').value = res.data.label || '';
         document.getElementById('addr-full').value = res.data.full_address || '';
-        document.getElementById('addr-city').value = res.data.city || 'دبي';
+        // find city id by name
+        var cityObj = CITIES_DATA.find(function(c) { return c.name === res.data.city; });
+        document.getElementById('addr-city').value = cityObj ? cityObj.id : '';
         updateAreas();
         setTimeout(function() {
-          document.getElementById('addr-area').value = res.data.area || '';
+          // find area id by name
+          var areaObj = AREAS_DATA.find(function(a) { return a.name === res.data.area; });
+          document.getElementById('addr-area').value = areaObj ? areaObj.id : '';
         }, 50);
         document.getElementById('addr-default').checked = res.data.is_default || false;
       }
@@ -1205,7 +1227,9 @@ async function saveAddress() {
   if (!label || !full || !area) { document.getElementById('addr-err').textContent = 'الرجاء تعبئة جميع الحقول واختيار المنطقة'; return; }
   document.getElementById('addr-err').textContent = '';
   if (isDef) { await SB.from('addresses').update({is_default: false}).eq('user_id', USER.id); }
-  var payload = { user_id: USER.id, label: label, full_address: full, city: city, area: area, is_default: isDef };
+  var cityName = getCityName(city);
+  var areaName = getAreaName(area);
+  var payload = { user_id: USER.id, label: label, full_address: full, city: cityName, area: areaName, is_default: isDef };
   var res;
   if (editingAddrId) {
     res = await SB.from('addresses').update(payload).eq('id', editingAddrId);
