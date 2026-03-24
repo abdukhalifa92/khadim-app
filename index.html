@@ -448,12 +448,27 @@ const ORDER_STATUS = {
 // ═══════════════════════════════════════════════════
 //  SUPABASE INIT
 // ═══════════════════════════════════════════════════
+function createSB(url, key) {
+  return supabase.createClient(url, key, {
+    global: {
+      headers: {
+        'apikey': key,
+        'Authorization': 'Bearer ' + key
+      }
+    },
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true
+    }
+  });
+}
+
 async function initSupabase() {
   const url = document.getElementById('sb-url').value.trim();
   const key = document.getElementById('sb-key').value.trim();
   if (!url || !key) { toast('أدخل الـ URL والـ Key أولاً ⚠️'); return; }
   try {
-    SB = supabase.createClient(url, key);
+    SB = createSB(url, key);
     // test connection
     const { error } = await SB.from('categories').select('id').limit(1);
     if (error) throw error;
@@ -477,7 +492,7 @@ async function tryAutoConnect() {
   if (!url || !key) return false;
   document.getElementById('sb-url').value = url;
   document.getElementById('sb-key').value = key;
-  SB = supabase.createClient(url, key);
+  SB = createSB(url, key);
   try {
     const { error } = await SB.from('categories').select('id').limit(1);
     if (error) throw error;
@@ -777,15 +792,21 @@ async function confirmBooking() {
   };
 
   if (USER) {
-    // save to Supabase
+    // مستخدم مسجّل: احفظ في Supabase
     bookingData.user_id = USER.id;
     const { error } = await SB.from('bookings').insert(bookingData);
-    if (error) { toast('❌ خطأ: ' + error.message); return; }
+    if (error) {
+      console.error('Booking error:', error);
+      toast('خطأ في الحفظ: ' + (error.message || 'unknown'));
+      return;
+    }
+    toast('تم حفظ الحجز في قاعدة البيانات');
   } else {
-    // save to local cart
+    // غير مسجّل: احفظ في السلة المحلية
     CART.push({ id: Date.now(), ...bookingData, worker: currentWorker });
     localStorage.setItem('khadim_cart', JSON.stringify(CART));
     updateCartBadge();
+    toast('تمت الاضافة للسلة - سجل دخولك لتاكيد الحجز');
   }
   closeModal();
   renderCart();
