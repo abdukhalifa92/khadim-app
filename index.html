@@ -850,7 +850,7 @@ function calcSummary() {
 }
 
 async function confirmBooking() {
-  if (!SB) { toast('اتصل بـ Supabase أولاً'); return; }
+  if (!SB) { await tryAutoConnect(); if (!SB) { toast('تعذّر الاتصال بالخادم ⚠️'); return; } }
   const date  = document.getElementById('date-inp').value;
   const time  = document.getElementById('time-inp').value;
   const addr  = document.getElementById('addr-inp').value.trim();
@@ -983,7 +983,12 @@ function renderAuthForm() {
     '<div id="auth-err" style="color:var(--err);font-size:12px;margin-top:10px;text-align:center"></div>';
 }
 async function doAuth() {
-  if (!SB) { toast('اتصل بـ Supabase أولاً'); return; }
+  if (!SB) {
+    // try to reconnect from config.json or localStorage
+    await tryAutoConnect();
+    if (SB) await bootApp();
+    if (!SB) { toast('تعذّر الاتصال بالخادم ⚠️'); return; }
+  }
   const email = document.getElementById('af-email').value.trim();
   const pass  = document.getElementById('af-pass').value;
   let res;
@@ -1203,8 +1208,8 @@ function go(name) {
 //  BOOT
 // ═══════════════════════════════════════════════════
 (async () => {
-  const ok = await tryAutoConnect();
-  if (ok) await bootApp();
+  await tryAutoConnect();
+  if (SB) await bootApp();
 })();
 </script>
 </body>
