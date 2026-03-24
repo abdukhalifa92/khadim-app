@@ -449,18 +449,17 @@ const ORDER_STATUS = {
 //  SUPABASE INIT
 // ═══════════════════════════════════════════════════
 function createSB(url, key) {
-  return supabase.createClient(url, key, {
+  const client = supabase.createClient(url, key, {
     global: {
-      headers: {
-        'apikey': key,
-        'Authorization': 'Bearer ' + key
-      }
+      headers: { 'apikey': key }
     },
     auth: {
       persistSession: true,
-      autoRefreshToken: true
+      autoRefreshToken: true,
+      storageKey: 'khadim_auth'
     }
   });
+  return client;
 }
 
 async function initSupabase() {
@@ -527,8 +526,19 @@ async function bootApp() {
 // ═══════════════════════════════════════════════════
 async function loadProfile() {
   if (!SB || !USER) return;
-  const { data } = await SB.from('profiles').select('*').eq('id', USER.id).single();
-  PROFILE = data;
+  try {
+    // maybeSingle() returns null (not error) when row doesn't exist
+    const { data, error } = await SB.from('profiles').select('*').eq('id', USER.id).maybeSingle();
+    if (error) { console.warn('Profile load:', error.message); return; }
+    PROFILE = data;
+    // auto-create profile if missing
+    if (!PROFILE) {
+      const { data: newP } = await SB.from('profiles')
+        .insert({ id: USER.id, full_name: USER.user_metadata?.full_name || USER.email })
+        .select().maybeSingle();
+      PROFILE = newP;
+    }
+  } catch(e) { console.warn('loadProfile error:', e); }
 }
 
 function updateAuthBtn() {
@@ -792,7 +802,13 @@ async function confirmBooking() {
   };
 
   if (USER) {
-    // مستخدم مسجّل: احفظ في Supabase
+    // مستخدم مسجّل: تأكد من الـ session ثم احفظ
+    const { data: sessionData } = await SB.auth.getSession();
+    const token = sessionData?.session?.access_token;
+    if (!token) {
+      toast('انتهت الجلسة — سجّل دخولك مجدداً 🔑');
+      go('auth'); return;
+    }
     bookingData.user_id = USER.id;
     const { error } = await SB.from('bookings').insert(bookingData);
     if (error) {
@@ -800,13 +816,11 @@ async function confirmBooking() {
       toast('خطأ في الحفظ: ' + (error.message || 'unknown'));
       return;
     }
-    toast('تم حفظ الحجز في قاعدة البيانات');
   } else {
     // غير مسجّل: احفظ في السلة المحلية
     CART.push({ id: Date.now(), ...bookingData, worker: currentWorker });
     localStorage.setItem('khadim_cart', JSON.stringify(CART));
     updateCartBadge();
-    toast('تمت الاضافة للسلة - سجل دخولك لتاكيد الحجز');
   }
   closeModal();
   renderCart();
