@@ -445,6 +445,7 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
       <div class="fgrp">
         <label class="flbl">نوع السعر</label>
         <div class="pgrid" id="modal-prices"></div>
+      <div id="pt-desc" style="font-size:11px;color:var(--muted);margin-top:6px;padding:0 2px"></div>
       </div>
       <div class="fgrp" id="qty-row" style="display:none">
         <label class="flbl">الكمية (<span id="qty-unit-lbl"></span>)</label>
@@ -539,9 +540,10 @@ let activePt = 'all';
 let currentWorker = null;
 let selectedPt = null;
 
-const PT_LABEL = {fixed:'ثابت',hourly:'ساعة',daily:'يوم',weekly:'أسبوع',monthly:'شهر'};
-const PT_ICON  = {fixed:'💎',hourly:'⏱️',daily:'☀️',weekly:'📅',monthly:'🗓️'};
+const PT_LABEL = {fixed:'لكل مهمة',hourly:'ساعة',daily:'يوم',weekly:'أسبوع',monthly:'شهر'};
+const PT_ICON  = {fixed:'✅',hourly:'⏱️',daily:'☀️',weekly:'📅',monthly:'🗓️'};
 const PT_UNIT  = {hourly:'ساعات',daily:'أيام',weekly:'أسابيع',monthly:'أشهر'};
+const PT_DESC  = {fixed:'سعر ثابت للمهمة كاملة بغض النظر عن الوقت',hourly:'يُحسب بعدد الساعات',daily:'يُحسب بعدد الأيام',weekly:'يُحسب بعدد الأسابيع',monthly:'يُحسب بعدد الأشهر'};
 const STATUS_MAP = {
   available:{cls:'wb-ok',txt:'متاح'},
   busy:{cls:'wb-busy',txt:'مشغول'},
@@ -1026,9 +1028,17 @@ function openBooking(wid) {
 function selectPt(pt) {
   selectedPt = pt;
   document.querySelectorAll('.popt').forEach(o => o.classList.toggle('on', o.dataset.pt===pt));
-  const qr = document.getElementById('qty-row');
-  if (pt==='fixed') { qr.style.display='none'; }
-  else { qr.style.display='block'; document.getElementById('qty-unit-lbl').textContent = PT_UNIT[pt]; document.getElementById('qty-inp').value=1; }
+  const qr  = document.getElementById('qty-row');
+  const dsc = document.getElementById('pt-desc');
+  if (pt==='fixed') {
+    qr.style.display='none';
+    if (dsc) dsc.textContent = PT_DESC[pt];
+  } else {
+    qr.style.display='block';
+    document.getElementById('qty-unit-lbl').textContent = PT_UNIT[pt];
+    document.getElementById('qty-inp').value=1;
+    if (dsc) dsc.textContent = PT_DESC[pt];
+  }
   calcSummary();
 }
 
@@ -1039,12 +1049,16 @@ function calcSummary() {
   const sub   = price * qty;
   const vat   = Math.round(sub * 0.05);
   const total = sub + vat;
-  document.getElementById('modal-summary').innerHTML = `
-    <div class="srow"><span>الخدمة</span><span>${currentWorker.role_ar}</span></div>
-    <div class="srow"><span>نوع التسعير</span><span>${PT_ICON[selectedPt]} ${PT_LABEL[selectedPt]} × ${qty}</span></div>
-    <div class="srow"><span>السعر الأساسي</span><span>${sub} د.إ</span></div>
-    <div class="srow"><span>ضريبة القيمة المضافة ٥٪</span><span>${vat} د.إ</span></div>
-    <div class="srow tot"><span>الإجمالي</span><span>${total} د.إ</span></div>`;
+  var qtyLabel = selectedPt === 'fixed' ? 'مهمة واحدة' : PT_ICON[selectedPt]+' '+PT_LABEL[selectedPt]+' × '+qty;
+  var catName = (currentWorker.cats && currentWorker.cats.length)
+    ? currentWorker.cats.map(function(c){ return c.name_ar; }).join(' + ')
+    : currentWorker.role_ar;
+  document.getElementById('modal-summary').innerHTML =
+    '<div class="srow"><span>الخدمة</span><span>' + catName + '</span></div>' +
+    '<div class="srow"><span>نوع التسعير</span><span>' + qtyLabel + '</span></div>' +
+    '<div class="srow"><span>السعر الأساسي</span><span>' + sub + ' د.إ</span></div>' +
+    '<div class="srow"><span>ضريبة القيمة المضافة ٥٪</span><span>' + vat + ' د.إ</span></div>' +
+    '<div class="srow tot"><span>الإجمالي</span><span>' + total + ' د.إ</span></div>';
 }
 
 async function confirmBooking() {
