@@ -316,28 +316,28 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
 <!-- ── HOME ── -->
 <div class="screen on" id="sc-home">
   <div class="hero">
-    <div class="hero-badge">⭐ الأول في الإمارات للخدمات المنزلية</div>
-    <h1>خدمات منزلية<br><em>احترافية بضغطة زر</em></h1>
-    <p>خادمات وعاملات منزل ومنظفون محترفون بأسعار شفافة وثابتة أو بالساعة</p>
+    <div class="hero-badge" id="hero-badge">⭐ الأول في الإمارات للخدمات المنزلية</div>
+    <h1 id="hero-h1">خدمات منزلية<br><em id="hero-em">احترافية بضغطة زر</em></h1>
+    <p id="hero-p">خادمات وعاملات منزل ومنظفون محترفون بأسعار شفافة وثابتة أو بالساعة</p>
     <div class="hero-btns">
-      <button class="btn-p" onclick="go('services')">🔍 ابحث عن خدمة</button>
-      <button class="btn-s" onclick="go('orders')">📋 طلباتي</button>
+      <button class="btn-p" onclick="go('services')" id="hero-btn1">🔍 ابحث عن خدمة</button>
+      <button class="btn-s" onclick="go('orders')" id="hero-btn2">📋 طلباتي</button>
     </div>
   </div>
   <div class="stats">
-    <div class="stat"><div class="stat-n" id="stat-workers">--</div><div class="stat-l">عامل متاح</div></div>
-    <div class="stat"><div class="stat-n">٩٨٪</div><div class="stat-l">رضا العملاء</div></div>
-    <div class="stat"><div class="stat-n">٢٤/٧</div><div class="stat-l">خدمة متواصلة</div></div>
-    <div class="stat"><div class="stat-n" id="stat-bookings">--</div><div class="stat-l">حجز مكتمل</div></div>
+    <div class="stat"><div class="stat-n" id="stat-workers">--</div><div class="stat-l" id="stat-lbl-workers">عامل متاح</div></div>
+    <div class="stat"><div class="stat-n">٩٨٪</div><div class="stat-l" id="stat-lbl-sat">رضا العملاء</div></div>
+    <div class="stat"><div class="stat-n">٢٤/٧</div><div class="stat-l" id="stat-lbl-svc">خدمة متواصلة</div></div>
+    <div class="stat"><div class="stat-n" id="stat-bookings">--</div><div class="stat-l" id="stat-lbl-book">حجز مكتمل</div></div>
   </div>
   <div class="sec">
-    <div class="sec-ttl">تصفح الخدمات</div>
-    <div class="sec-sub">اختر الخدمة التي تناسب احتياجك</div>
+    <div class="sec-ttl" id="home-browse-ttl">تصفح الخدمات</div>
+    <div class="sec-sub" id="home-browse-sub">اختر الخدمة التي تناسب احتياجك</div>
     <div class="cats" id="cats-home"></div>
   </div>
   <div class="sec">
-    <div class="sec-ttl">⭐ أبرز العاملين</div>
-    <div class="sec-sub">الأكثر طلباً هذا الأسبوع</div>
+    <div class="sec-ttl" id="home-featured-ttl">⭐ أبرز العاملين</div>
+    <div class="sec-sub" id="home-featured-sub">الأكثر طلباً هذا الأسبوع</div>
     <div class="grid" id="featured-grid"></div>
   </div>
 </div>
@@ -345,8 +345,8 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
 <!-- ── SERVICES ── -->
 <div class="screen" id="sc-services">
   <div class="sec" style="padding-top:24px">
-    <div class="sec-ttl">🔍 استكشف الخدمات</div>
-    <div class="sec-sub">تصفية حسب النوع والسعر والتقييم</div>
+    <div class="sec-ttl" id="explore-ttl">🔍 استكشف الخدمات</div>
+    <div class="sec-sub" id="explore-sub">تصفية حسب النوع والسعر والتقييم</div>
     <div class="fbar">
       <input class="search-box" id="search-inp" placeholder="ابحث عن خدمة أو اسم..." oninput="applyFilters()">
       <div id="cat-chips" style="display:contents"></div>
@@ -367,7 +367,7 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
 <!-- ── CART ── -->
 <div class="screen" id="sc-cart">
   <div class="sec" style="padding-top:24px">
-    <div class="sec-ttl">🛒 سلة الحجوزات</div>
+    <div class="sec-ttl" id="cart-ttl">🛒 سلة الحجوزات</div>
     <div id="cart-body"></div>
   </div>
 </div>
@@ -375,8 +375,8 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
 <!-- ── FAVORITES ── -->
 <div class="screen" id="sc-favorites">
   <div class="sec" style="padding-top:24px">
-    <div class="sec-ttl">❤️ المفضلة</div>
-    <div class="sec-sub">العاملون الذين حفظتهم</div>
+    <div class="sec-ttl" id="fav-ttl">❤️ المفضلة</div>
+    <div class="sec-sub" id="fav-sub">العاملون الذين حفظتهم</div>
     <div id="favorites-body"></div>
   </div>
 </div>
@@ -385,10 +385,10 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
 <div class="screen" id="sc-addresses">
   <div class="sec" style="padding-top:24px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-      <div class="sec-ttl">&#128205; عناويني</div>
-      <button class="btn-p" style="padding:10px 18px;font-size:13px" onclick="openAddressModal()">+ إضافة عنوان</button>
+      <div class="sec-ttl" id="addr-ttl">&#128205; عناويني</div>
+      <button class="btn-p" style="padding:10px 18px;font-size:13px" onclick="openAddressModal()" id="addr-add-btn">+ إضافة عنوان</button>
     </div>
-    <div class="sec-sub">العناوين المحفوظة لديك</div>
+    <div class="sec-sub" id="addr-sub">العناوين المحفوظة لديك</div>
     <div id="addresses-body"></div>
   </div>
 </div>
@@ -396,8 +396,8 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
 <!-- ── ORDERS ── -->
 <div class="screen" id="sc-orders">
   <div class="sec" style="padding-top:24px">
-    <div class="sec-ttl">📋 طلباتي</div>
-    <div class="sec-sub">سجل حجوزاتك السابقة والحالية</div>
+    <div class="sec-ttl" id="orders-ttl">📋 طلباتي</div>
+    <div class="sec-sub" id="orders-sub">سجل حجوزاتك السابقة والحالية</div>
     <div id="orders-body"></div>
   </div>
 </div>
@@ -428,11 +428,11 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
 
 <!-- BOTTOM NAV -->
 <div class="bnav">
-  <button class="bnav-btn on" id="bn-home" onclick="go('home')"><span class="ico">🏠</span>الرئيسية</button>
-  <button class="bnav-btn" id="bn-services" onclick="go('services')"><span class="ico">🔍</span>الخدمات</button>
-  <button class="bnav-btn" id="bn-cart" onclick="go('cart')"><span class="ico">🛒</span>السلة</button>
-  <button class="bnav-btn" id="bn-orders" onclick="go('orders')"><span class="ico">📋</span>طلباتي</button>
-  <button class="bnav-btn" id="bn-profile" onclick="go('profile')"><span class="ico">👤</span>حسابي</button>
+  <button class="bnav-btn on" id="bn-home" onclick="go('home')"><span class="ico">🏠</span><span id="lbl-home">الرئيسية</span></button>
+  <button class="bnav-btn" id="bn-services" onclick="go('services')"><span class="ico">🔍</span><span id="lbl-services">الخدمات</span></button>
+  <button class="bnav-btn" id="bn-cart" onclick="go('cart')"><span class="ico">🛒</span><span id="lbl-cart">السلة</span></button>
+  <button class="bnav-btn" id="bn-orders" onclick="go('orders')"><span class="ico">📋</span><span id="lbl-orders">طلباتي</span></button>
+  <button class="bnav-btn" id="bn-profile" onclick="go('profile')"><span class="ico">👤</span><span id="lbl-profile">حسابي</span></button>
 </div>
 
 <!-- BOOKING MODAL -->
@@ -446,7 +446,7 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
       <div id="modal-worker"></div>
       <hr class="divider">
       <div class="fgrp">
-        <label class="flbl">نوع السعر</label>
+        <label class="flbl" id="lbl-price-type">نوع السعر</label>
         <div class="pgrid" id="modal-prices"></div>
       <div id="pt-desc" style="font-size:11px;color:var(--muted);margin-top:6px;padding:0 2px"></div>
       </div>
@@ -455,25 +455,25 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
         <input class="finp" type="number" id="qty-inp" min="1" max="30" value="1" oninput="calcSummary()">
       </div>
       <div class="fgrp">
-        <label class="flbl">تاريخ الخدمة</label>
+        <label class="flbl" id="lbl-date">تاريخ الخدمة</label>
         <input class="finp" type="date" id="date-inp">
       </div>
       <div class="fgrp">
-        <label class="flbl">وقت البدء</label>
+        <label class="flbl" id="lbl-time">وقت البدء</label>
         <input class="finp" type="time" id="time-inp" value="09:00">
       </div>
       <div class="fgrp">
-        <label class="flbl">العنوان</label>
+        <label class="flbl" id="lbl-addr">العنوان</label>
         <div id="booking-addr-wrap">
           <input class="finp" type="text" id="addr-inp" placeholder="المنطقة، المبنى، رقم الشقة...">
         </div>
       </div>
       <div class="fgrp">
-        <label class="flbl">ملاحظات</label>
+        <label class="flbl" id="lbl-notes">ملاحظات</label>
         <textarea class="ftxt" id="notes-inp" placeholder="أي تعليمات خاصة..."></textarea>
       </div>
       <div class="sbox" id="modal-summary"></div>
-      <button class="btn-p" style="width:100%;font-size:15px;padding:14px" onclick="confirmBooking()">✅ تأكيد وإضافة للسلة</button>
+      <button class="btn-p" style="width:100%;font-size:15px;padding:14px" onclick="confirmBooking()" id="confirm-book-btn">✅ تأكيد وإضافة للسلة</button>
     </div>
   </div>
 </div>
@@ -519,9 +519,9 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
 <!-- SUCCESS -->
 <div class="success-overlay" id="success-overlay">
   <div class="sico-w">✓</div>
-  <div style="font-size:26px;font-weight:800;margin-bottom:8px">تم الحجز بنجاح!</div>
-  <div style="color:var(--muted);margin-bottom:28px">سيتواصل معك العامل خلال ٣٠ دقيقة</div>
-  <button class="btn-p" onclick="hideSuccess()">العودة للرئيسية</button>
+  <div style="font-size:26px;font-weight:800;margin-bottom:8px" id="success-title">تم الحجز بنجاح!</div>
+  <div style="color:var(--muted);margin-bottom:28px" id="success-sub">سيتواصل معك العامل خلال ٣٠ دقيقة</div>
+  <button class="btn-p" onclick="hideSuccess()" id="success-btn">العودة للرئيسية</button>
 </div>
 
 <!-- TOAST -->
@@ -660,6 +660,7 @@ async function bootApp() {
   CART = JSON.parse(localStorage.getItem('khadim_cart') || '[]');
   updateCartBadge();
   await Promise.all([loadCategories(), loadWorkers(), loadFavs(), loadCitiesAreas(), loadNationalities()]);
+  applyLang();
   renderHome();
   renderServices();
 }
@@ -1584,12 +1585,49 @@ var TRANSLATIONS = {
     book_now: '📅 احجز الآن', confirm_book: '✅ تأكيد وإضافة للسلة',
     checkout: '💳 إتمام الدفع', home: 'الرئيسية', services: 'الخدمات',
     cart: 'السلة', orders: 'طلباتي', profile: 'حسابي',
-    explore: 'استكشف الخدمات', browse: 'تصفح الخدمات',
+    explore: '🔍 استكشف الخدمات', browse: 'تصفح الخدمات',
+    browse_sub: 'اختر الخدمة التي تناسب احتياجك',
     featured: '⭐ أبرز العاملين', top_workers: 'الأكثر طلباً هذا الأسبوع',
+    explore_sub: 'تصفية حسب النوع والسعر والتقييم',
+    cart_title: '🛒 سلة الحجوزات', fav_title: '❤️ المفضلة',
+    fav_sub: 'العاملون الذين حفظتهم', addr_title: '📍 عناويني',
+    addr_sub: 'العناوين المحفوظة لديك', orders_title: '📋 طلباتي',
+    orders_sub: 'سجل حجوزاتك السابقة والحالية',
+    add_addr: '+ إضافة عنوان', hero_badge: '⭐ الأول في الإمارات للخدمات المنزلية',
+    hero_h1: 'خدمات منزلية', hero_em: 'احترافية بضغطة زر',
+    hero_p: 'خادمات وعاملات منزل ومنظفون محترفون بأسعار شفافة وثابتة أو بالساعة',
+    hero_btn1: '🔍 ابحث عن خدمة', hero_btn2: '📋 طلباتي',
+    stat_workers: 'عامل متاح', stat_satisfaction: 'رضا العملاء',
+    stat_service: 'خدمة متواصلة', stat_bookings: 'حجز مكتمل',
     per_task: 'لكل مهمة', per_hour: 'ساعة', per_day: 'يوم',
     per_week: 'أسبوع', per_month: 'شهر',
-    rating: 'تقييم', exp: 'سنوات خبرة', available: 'متاح',
-    busy: 'مشغول', new_w: 'جديد'
+    available: 'متاح', busy: 'مشغول', new_w: 'جديد',
+    exp: 'سنوات', book_title: '📅 حجز الخدمة',
+    price_type: 'نوع السعر', qty_label: 'الكمية',
+    date_label: 'تاريخ الخدمة', time_label: 'وقت البدء',
+    notes_label: 'ملاحظات', notes_ph: 'أي تعليمات خاصة...',
+    addr_label: 'العنوان', subtotal: 'السعر الأساسي',
+    vat: 'ضريبة القيمة المضافة ٥٪', total: 'الإجمالي',
+    login_title: 'مرحباً بك في خدم', login_sub: 'سجّل دخولك للحجز وتتبع طلباتك',
+    login_tab: 'تسجيل الدخول', signup_tab: 'حساب جديد',
+    email_label: 'البريد الإلكتروني', pass_label: 'كلمة المرور',
+    name_label: 'الاسم الكامل', name_ph: 'محمد أحمد',
+    empty_cart: 'سلتك فارغة', empty_cart_sub: 'ابحث عن خدمة وأضفها',
+    browse_services: 'تصفح الخدمات', no_orders: 'لا توجد طلبات بعد',
+    no_fav: 'لا توجد عمال في المفضلة بعد',
+    success_title: 'تم الحجز بنجاح!', success_sub: 'سيتواصل معك العامل خلال ٣٠ دقيقة',
+    back_home: 'العودة للرئيسية', task_done: 'مهمة واحدة',
+    save_addr: '✅ حفظ العنوان', add_new_addr: '+ إضافة عنوان جديد',
+    city_label: 'المدينة', area_label: 'المنطقة',
+    default_addr: 'افتراضي', edit_addr: '✎ تعديل',
+    set_default: '★ افتراضي', del_addr: '🗑 حذف',
+    confirm_del: 'هل تريد حذف هذا العنوان؟',
+    my_orders: 'طلباتي', my_fav: 'المفضلة',
+    payment: 'طرق الدفع', my_addresses: 'عناويني',
+    notif: 'الإشعارات', lang_label: 'اللغة', help: 'مركز المساعدة',
+    logout: 'تسجيل الخروج', completed_orders: 'حجز', fav_count: 'مفضلة',
+    status_pending: 'قيد الانتظار', status_confirmed: 'مؤكد',
+    status_progress: 'جاري التنفيذ', status_done: 'مكتمل', status_cancelled: 'ملغي'
   },
   en: {
     search_ph: 'Search service or name...',
@@ -1597,12 +1635,49 @@ var TRANSLATIONS = {
     book_now: '📅 Book Now', confirm_book: '✅ Confirm & Add to Cart',
     checkout: '💳 Checkout', home: 'Home', services: 'Services',
     cart: 'Cart', orders: 'Orders', profile: 'Profile',
-    explore: 'Explore Services', browse: 'Browse Services',
+    explore: '🔍 Explore Services', browse: 'Browse Services',
+    browse_sub: 'Choose the service that suits your needs',
     featured: '⭐ Top Workers', top_workers: 'Most requested this week',
+    explore_sub: 'Filter by type, price and rating',
+    cart_title: '🛒 Booking Cart', fav_title: '❤️ Favorites',
+    fav_sub: 'Workers you have saved', addr_title: '📍 My Addresses',
+    addr_sub: 'Your saved addresses', orders_title: '📋 My Orders',
+    orders_sub: 'Your past and current bookings',
+    add_addr: '+ Add Address', hero_badge: '⭐ #1 in UAE for Home Services',
+    hero_h1: 'Home Services', hero_em: 'Professional at a tap',
+    hero_p: 'Maids, cleaners & professionals at transparent prices — per task or hourly',
+    hero_btn1: '🔍 Find a Service', hero_btn2: '📋 My Orders',
+    stat_workers: 'Workers Available', stat_satisfaction: 'Satisfaction Rate',
+    stat_service: '24/7 Service', stat_bookings: 'Bookings Done',
     per_task: 'Per Task', per_hour: 'Hour', per_day: 'Day',
     per_week: 'Week', per_month: 'Month',
-    rating: 'Rating', exp: 'yrs exp', available: 'Available',
-    busy: 'Busy', new_w: 'New'
+    available: 'Available', busy: 'Busy', new_w: 'New',
+    exp: 'yrs', book_title: '📅 Book Service',
+    price_type: 'Pricing Type', qty_label: 'Quantity',
+    date_label: 'Service Date', time_label: 'Start Time',
+    notes_label: 'Notes', notes_ph: 'Any special instructions...',
+    addr_label: 'Address', subtotal: 'Subtotal',
+    vat: 'VAT 5%', total: 'Total',
+    login_title: 'Welcome to Khadim', login_sub: 'Sign in to book and track your orders',
+    login_tab: 'Sign In', signup_tab: 'New Account',
+    email_label: 'Email Address', pass_label: 'Password',
+    name_label: 'Full Name', name_ph: 'Your Name',
+    empty_cart: 'Your cart is empty', empty_cart_sub: 'Find a service and add it',
+    browse_services: 'Browse Services', no_orders: 'No orders yet',
+    no_fav: 'No workers in favorites yet',
+    success_title: 'Booking Confirmed!', success_sub: 'The worker will contact you within 30 minutes',
+    back_home: 'Back to Home', task_done: 'One Task',
+    save_addr: '✅ Save Address', add_new_addr: '+ Add New Address',
+    city_label: 'City', area_label: 'Area',
+    default_addr: 'Default', edit_addr: '✎ Edit',
+    set_default: '★ Set Default', del_addr: '🗑 Delete',
+    confirm_del: 'Delete this address?',
+    my_orders: 'My Orders', my_fav: 'Favorites',
+    payment: 'Payment Methods', my_addresses: 'My Addresses',
+    notif: 'Notifications', lang_label: 'Language', help: 'Help Center',
+    logout: 'Sign Out', completed_orders: 'Bookings', fav_count: 'Favorites',
+    status_pending: 'Pending', status_confirmed: 'Confirmed',
+    status_progress: 'In Progress', status_done: 'Completed', status_cancelled: 'Cancelled'
   }
 };
 
@@ -1617,29 +1692,86 @@ function n(ar, en) {
 function toggleLang() {
   LANG = LANG === 'ar' ? 'en' : 'ar';
   localStorage.setItem('lang', LANG);
-  document.getElementById('lang-btn').textContent = LANG === 'ar' ? 'EN' : 'ع';
-  document.documentElement.lang = LANG;
-  document.documentElement.dir = LANG === 'ar' ? 'rtl' : 'ltr';
-  // re-render current screen
+  applyLang();
   renderHome();
   renderServices();
   renderFilterChips();
-  updateBottomNav();
 }
 
-function updateBottomNav() {
-  var btns = [
-    {id:'bn-home',    key:'home'},
-    {id:'bn-services',key:'services'},
-    {id:'bn-cart',    key:'cart'},
-    {id:'bn-orders',  key:'orders'},
-    {id:'bn-profile', key:'profile'}
-  ];
-  btns.forEach(function(b) {
-    var el = document.getElementById(b.id);
-    if (el) el.lastChild.textContent = t(b.key);
+function applyLang() {
+  document.getElementById('lang-btn').textContent = LANG === 'ar' ? 'EN' : 'ع';
+  document.documentElement.lang = LANG;
+  document.documentElement.dir = LANG === 'ar' ? 'rtl' : 'ltr';
+  PT_LABEL = LANG === 'ar' ? PT_LABEL_AR : PT_LABEL_EN;
+
+  // bottom nav
+  var navMap = {
+    'lbl-home':'home','lbl-services':'services','lbl-cart':'cart',
+    'lbl-orders':'orders','lbl-profile':'profile'
+  };
+  Object.keys(navMap).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = t(navMap[id]);
   });
+
+  // hero
+  setText('hero-badge', t('hero_badge'));
+  var h1 = document.getElementById('hero-h1');
+  if (h1) h1.innerHTML = t('hero_h1') + '<br><em id="hero-em">' + t('hero_em') + '</em>';
+  setText('hero-p', t('hero_p'));
+  setText('hero-btn1', t('hero_btn1'));
+  setText('hero-btn2', t('hero_btn2'));
+
+  // stats
+  setText('stat-lbl-workers', t('stat_workers'));
+  setText('stat-lbl-sat',     t('stat_satisfaction'));
+  setText('stat-lbl-svc',     t('stat_service'));
+  setText('stat-lbl-book',    t('stat_bookings'));
+
+  // section titles
+  setText('home-browse-ttl',  t('browse'));
+  setText('home-browse-sub',  t('browse_sub'));
+  setText('home-featured-ttl',t('featured'));
+  setText('home-featured-sub',t('top_workers'));
+  setText('explore-ttl',      t('explore'));
+  setText('explore-sub',      t('explore_sub'));
+  setText('cart-ttl',         t('cart_title'));
+  setText('fav-ttl',          t('fav_title'));
+  setText('fav-sub',          t('fav_sub'));
+  setText('orders-ttl',       t('orders_title'));
+  setText('orders-sub',       t('orders_sub'));
+  setText('addr-ttl',         t('addr_title'));
+  setText('addr-sub',         t('addr_sub'));
+  setText('addr-add-btn',     t('add_addr'));
+
+  // booking modal
+  setText('lbl-price-type',   t('price_type'));
+  setText('lbl-date',         t('date_label'));
+  setText('lbl-time',         t('time_label'));
+  setText('lbl-notes',        t('notes_label'));
+  setText('lbl-addr',         t('addr_label'));
+  setText('confirm-book-btn', t('confirm_book'));
+
+  // success
+  setText('success-title', t('success_title'));
+  setText('success-sub',   t('success_sub'));
+  setText('success-btn',   t('back_home'));
+
+  // search placeholder
+  var si = document.getElementById('search-inp');
+  if (si) si.placeholder = t('search_ph');
+
+  // notes placeholder
+  var ni = document.getElementById('notes-inp');
+  if (ni) ni.placeholder = t('notes_ph');
 }
+
+function setText(id, text) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+function updateBottomNav() { applyLang(); }
 
 function getCatName(cat) { return n(cat.name_ar, cat.name_en); }
 function getCityName2(city) { return n(city.name_ar, city.name_en); }
