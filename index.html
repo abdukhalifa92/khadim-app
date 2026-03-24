@@ -27,7 +27,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(circle
 /* ───────── SETUP BANNER ───────── */
 
 /* ───────── NAV ───────── */
-nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filter:blur(18px);border-bottom:1px solid rgba(31,166,122,.12);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:66px;}
+nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filter:blur(18px);border-bottom:1px solid rgba(31,166,122,.12);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:66px;-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
 .logo{font-size:26px;font-weight:900;background:linear-gradient(135deg,var(--gold-light),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;cursor:pointer;letter-spacing:-1px;}
 .nav-right{display:flex;align-items:center;gap:10px;}
 .ic-btn{background:var(--s2);border:1px solid rgba(31,166,122,.18);border-radius:10px;padding:8px 12px;cursor:pointer;font-size:17px;color:var(--gold);transition:.2s;position:relative;}
@@ -40,7 +40,7 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filt
 @keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
 /* ───────── BOTTOM NAV ───────── */
-.bnav{position:fixed;bottom:0;left:0;right:0;background:rgba(17,24,39,.98);backdrop-filter:blur(18px);border-top:1px solid rgba(31,166,122,.12);display:flex;z-index:90;padding:6px 0 calc(6px + env(safe-area-inset-bottom));}
+.bnav{position:fixed;bottom:0;left:0;right:0;background:rgba(17,24,39,.98);backdrop-filter:blur(18px);border-top:1px solid rgba(31,166,122,.12);display:flex;z-index:90;padding:6px 0 calc(6px + env(safe-area-inset-bottom));-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform;}
 .bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px;cursor:pointer;border:none;background:none;color:var(--muted);font-family:'Cairo',sans-serif;font-size:10px;transition:.2s;}
 .bnav-btn .ico{font-size:22px;}
 .bnav-btn.on{color:var(--gold);}
@@ -247,6 +247,14 @@ nav{position:sticky;top:0;z-index:100;background:rgba(9,13,24,.96);backdrop-filt
 </style>
 <style>
 html { touch-action: pan-x pan-y; }
+* { -webkit-tap-highlight-color: transparent; }
+nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
+.cat, .wcard, .mitem, .chip, .ptab, .popt, .addr-btn, .cdel,
+.auth-tab, .bnav-btn, .modal-close, .mclose {
+  touch-action: manipulation;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
 </style>
 <script>
 (function() {
