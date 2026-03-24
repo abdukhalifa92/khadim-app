@@ -343,13 +343,8 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
     <div class="sec-sub">تصفية حسب النوع والسعر والتقييم</div>
     <div class="fbar">
       <input class="search-box" id="search-inp" placeholder="ابحث عن خدمة أو اسم..." oninput="applyFilters()">
-      <button class="chip on" data-cat="all" onclick="setCat(this,'all')">الكل</button>
-      <button class="chip" data-cat="خادمة منزلية" onclick="setCat(this,'خادمة منزلية')">🏠 خادمة</button>
-      <button class="chip" data-cat="تنظيف عام" onclick="setCat(this,'تنظيف عام')">🧹 تنظيف</button>
-      <button class="chip" data-cat="طباخ / طباخة" onclick="setCat(this,'طباخ / طباخة')">👨‍🍳 طبخ</button>
-      <button class="chip" data-cat="جليسة أطفال" onclick="setCat(this,'جليسة أطفال')">👶 جليسة</button>
-      <button class="chip" data-gender="female" onclick="setGender(this,'female')">👩 إناث</button>
-      <button class="chip" data-gender="male" onclick="setGender(this,'male')">👨 ذكور</button>
+      <div id="cat-chips" style="display:contents"></div>
+      <div id="gender-chips" style="display:contents"></div>
     </div>
     <div class="ptabs">
       <button class="ptab on" onclick="setPt(this,'all')">كل الأسعار</button>
@@ -774,6 +769,7 @@ async function loadOrders() {
 //  RENDER HOME
 // ═══════════════════════════════════════════════════
 function renderHome() {
+  renderFilterChips();
   // categories
   const cg = document.getElementById('cats-home');
   if (!CATS.length) { cg.innerHTML = '<div class="loader"><div class="spin"></div></div>'; return; }
@@ -794,7 +790,34 @@ function renderHome() {
 // ═══════════════════════════════════════════════════
 //  RENDER SERVICES
 // ═══════════════════════════════════════════════════
+function renderFilterChips() {
+  var catWrap = document.getElementById("cat-chips");
+  if (catWrap) {
+    var chips = [];
+    chips.push(makeChip("cat", "all", "الكل", "الكل", activeCat === "all"));
+    CATS.forEach(function(c) {
+      chips.push(makeChip("cat", c.name_ar, c.icon + " " + c.name_ar, c.name_ar, activeCat === c.name_ar));
+    });
+    catWrap.innerHTML = chips.join("");
+  }
+  var genderWrap = document.getElementById("gender-chips");
+  if (genderWrap) {
+    genderWrap.innerHTML =
+      makeChip("gender", "female", "👩 إناث", "female", activeGender === "female") +
+      makeChip("gender", "male",   "👨 ذكور", "male",   activeGender === "male");
+  }
+}
+
+function makeChip(type, val, label, fnVal, isOn) {
+  var cls = "chip" + (isOn ? " on" : "");
+  var fn  = type === "cat"
+    ? "setCat(this, this.dataset.val)"
+    : "setGender(this, this.dataset.val)";
+  return "<button class='" + cls + "' data-" + type + "='" + val + "' data-val='" + fnVal + "' onclick='" + fn + "'>" + label + "</button>";
+}
+
 function renderServices() {
+  renderFilterChips();
   const search = (document.getElementById('search-inp')?.value||'').toLowerCase();
   let list = WORKERS.filter(w => {
     const matchCat = activeCat==='all' ||
@@ -851,15 +874,13 @@ function workerCard(w) {
 //  FILTERS
 // ═══════════════════════════════════════════════════
 function setGender(el, gender) {
-  activeGender = activeGender === gender ? 'all' : gender;
-  document.querySelectorAll('[data-gender]').forEach(function(c){ c.classList.toggle('on', c.dataset.gender === activeGender); });
-  console.log('Gender filter:', activeGender, '| workers with gender:', WORKERS.filter(function(w){ return w.gender; }).map(function(w){ return w.name+':'+w.gender; }));
+  var g = gender || el.dataset.val;
+  activeGender = activeGender === g ? "all" : g;
   applyFilters();
 }
 
 function setCat(el, cat) {
-  activeCat = cat;
-  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.cat===cat));
+  activeCat = cat || el.dataset.val;
   applyFilters();
 }
 function setPt(el, pt) {
