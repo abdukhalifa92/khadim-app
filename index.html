@@ -348,6 +348,8 @@ nav button, .bnav-btn, .ic-btn, .btn-p, .btn-s, .btn-book, .btn-fav,
       <button class="chip" data-cat="تنظيف عام" onclick="setCat(this,'تنظيف عام')">🧹 تنظيف</button>
       <button class="chip" data-cat="طباخ / طباخة" onclick="setCat(this,'طباخ / طباخة')">👨‍🍳 طبخ</button>
       <button class="chip" data-cat="جليسة أطفال" onclick="setCat(this,'جليسة أطفال')">👶 جليسة</button>
+      <button class="chip" data-gender="female" onclick="setGender(this,'female')">👩 إناث</button>
+      <button class="chip" data-gender="male" onclick="setGender(this,'male')">👨 ذكور</button>
     </div>
     <div class="ptabs">
       <button class="ptab on" onclick="setPt(this,'all')">كل الأسعار</button>
@@ -652,7 +654,7 @@ async function bootApp() {
   updateAuthBtn();
   CART = JSON.parse(localStorage.getItem('khadim_cart') || '[]');
   updateCartBadge();
-  await Promise.all([loadCategories(), loadWorkers(), loadFavs(), loadCitiesAreas()]);
+  await Promise.all([loadCategories(), loadWorkers(), loadFavs(), loadCitiesAreas(), loadNationalities()]);
   renderHome();
   renderServices();
 }
@@ -699,14 +701,17 @@ async function loadWorkers() {
   if (!SB) return;
   const { data, error } = await SB
     .from('workers')
-    .select('*, worker_categories(category_id, categories(name_ar, icon, price_fixed, price_hourly, price_daily, price_weekly, price_monthly))')
+    .select('*, worker_categories(category_id, categories(name_ar, icon, price_fixed, price_hourly, price_daily, price_weekly, price_monthly)), nationalities(name_ar, flag)')
     .eq('is_active', true)
     .order('rating', { ascending: false });
   if (!error) {
     WORKERS = data.map(function(w) {
       var cats = (w.worker_categories || []).map(function(wc) { return wc.categories; }).filter(Boolean);
       // inherit category prices where worker has no price
-      var merged = Object.assign({}, w, { cats: cats });
+      var natObj = w.nationalities || null;
+      var natDisplay = natObj ? (natObj.flag + ' ' + natObj.name_ar) : (w.nationality || '');
+      var genderDisplay = w.gender === 'male' ? '👨 ذكر' : w.gender === 'female' ? '👩 أنثى' : '';
+      var merged = Object.assign({}, w, { cats: cats, nat_display: natDisplay, gender_display: genderDisplay });
       var catPricing = cats[0] || {};
       ['fixed','hourly','daily','weekly','monthly'].forEach(function(k) {
         var wKey = 'price_' + k;
@@ -794,10 +799,11 @@ function renderServices() {
     const matchCat = activeCat==='all' ||
       (w.cats && w.cats.some(function(c){ return c.name_ar === activeCat; })) ||
       w.role_ar === activeCat;
+    const matchGender = activeGender==='all' || w.gender === activeGender || w.gender === 'any';
     const matchPt  = activePt==='all' || (w['price_'+activePt] !== null && w['price_'+activePt] !== undefined);
     const matchSrch= !search || w.name.toLowerCase().includes(search) || w.role_ar.toLowerCase().includes(search) ||
       (w.cats && w.cats.some(function(c){ return c.name_ar.includes(search); }));
-    return matchCat && matchPt && matchSrch;
+    return matchCat && matchPt && matchSrch && matchGender;
   });
   const sg = document.getElementById('services-grid');
   sg.innerHTML = list.length
@@ -825,10 +831,11 @@ function workerCard(w) {
         w.cats && w.cats.length
           ? w.cats.map(function(c){ return c.icon+' '+c.name_ar; }).join(' · ')
           : w.role_ar
-      } · ${w.nationality||''}</div>
+      } · ${w.nat_display||w.nationality||''}</div>
       <div class="wmeta">
         <span><span class="stars">★</span> ${w.rating} (${w.reviews_count})</span>
         <span>⏳ ${w.experience_years} سنوات</span>
+        ${w.gender_display ? '<span>'+w.gender_display+'</span>' : ''}
       </div>
       <div class="prices">${pts}</div>
       <div class="wacts">
@@ -842,6 +849,12 @@ function workerCard(w) {
 // ═══════════════════════════════════════════════════
 //  FILTERS
 // ═══════════════════════════════════════════════════
+function setGender(el, gender) {
+  activeGender = activeGender === gender ? 'all' : gender;
+  document.querySelectorAll('[data-gender]').forEach(function(c){ c.classList.toggle('on', c.dataset.gender === activeGender); });
+  applyFilters();
+}
+
 function setCat(el, cat) {
   activeCat = cat;
   document.querySelectorAll('.chip').forEach(c => c.classList.toggle('on', c.dataset.cat===cat));
@@ -1299,8 +1312,15 @@ async function signOut() {
 // ═══════════════════════════════════════════════════
 //  CITIES & AREAS (from Supabase)
 // ═══════════════════════════════════════════════════
-var CITIES_DATA = [];  // [{id, name}, ...]
+var CITIES_DATA = [];
+var NATIONALITIES = [];  // [{id, name}, ...]
 var AREAS_DATA  = [];  // [{id, city_id, name}, ...]
+
+async function loadNationalities() {
+  if (!SB) return;
+  var res = await SB.from('nationalities').select('id,name_ar,flag').eq('is_active', true).order('sort_order');
+  if (!res.error) NATIONALITIES = res.data || [];
+}
 
 async function loadCitiesAreas() {
   if (!SB) return;
